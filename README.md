@@ -31,3 +31,14 @@ Once o1 was released, I was surprised how fragmented the "Show chain of thought"
 ## Results
 
 TBD
+
+
+
+### My Background
+
+* Prior Astrophysics Professor at UMD [[B1]](https://umdphysics.umd.edu/about-us/news/department-news/697-jon-mckinney-publishes-in-science-express.html) [[B2]](https://umdphysics.umd.edu/academics/courses/945-physics-420-principles-of-modern-physics.html) [[B3]](https://www.linkedin.com/in/jonathan-mckinney-32b0ab18/) [[B4]](https://scholar.google.com/citations?user=5L3LfOYAAAAJ&hl=en)
+* Current Director of Research at H2O.ai [[B5]](https://h2o.ai/company/team/makers/)
+* AutoML products at H2O.ai for last 7 years [[B6]](https://h2o.ai/platform/ai-cloud/make/h2o-driverless-ai/)
+* Fine-tuning LLMs [[B7]](https://arxiv.org/abs/2306.08161), RAG, and Agents for last 2 years (h2oGPT [[B8]](https://github.com/h2oai/h2ogpt))
+* I have only one publication on LLMs, but I have lots of enthusiasm and some experience in the field.
+* My eduction is in physics, not computer science, so I may be less adept at the details of LLMs.
