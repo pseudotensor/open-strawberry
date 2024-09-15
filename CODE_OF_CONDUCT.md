@@ -1,4 +1,4 @@
-# OpenStrawberry Code of Conduct
+# open-strawberry Code of Conduct
 
 ## Our Pledge
 

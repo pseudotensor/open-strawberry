@@ -1,6 +1,6 @@
-# Contributing to OpenStrawberry
+# Contributing to open-strawberry
 
-We're excited that you're interested in contributing to OpenStrawberry! This document outlines the process for contributing to this project and provides some guidelines to ensure a smooth collaboration.
+We're excited that you're interested in contributing to open-strawberry! This document outlines the process for contributing to this project and provides some guidelines to ensure a smooth collaboration.
 
 ## Table of Contents
 
@@ -20,14 +20,14 @@ By participating in this project, you are expected to uphold our [Code of Conduc
 ## Getting Started
 
 1. Fork the repository on GitHub.
-2. Clone your fork locally: `git clone https://github.com/pseudotensor/OpenStrawberry.git`
+2. Clone your fork locally: `git clone https://github.com/pseudotensor/open-strawberry.git`
 3. Create a new branch for your feature or bug fix: `git checkout -b feature/your-feature-name` or `git checkout -b fix/your-bug-fix`
 4. Make your changes and commit them with a clear commit message.
 5. Push your changes to your fork: `git push origin your-branch-name`
 
 ## How to Contribute
 
-There are many ways to contribute to OpenStrawberry:
+There are many ways to contribute to open-strawberry:
 
 - Implement new features
 - Fix bugs
@@ -40,14 +40,14 @@ For all contributions, please first discuss the change you wish to make via issu
 
 ## Reporting Bugs
 
-1. Ensure the bug was not already reported by searching on GitHub under [Issues](https://github.com/pseudotensor/OpenStrawberry/issues).
-2. If you're unable to find an open issue addressing the problem, [open a new one](https://github.com/pseudotensor/OpenStrawberry/issues/new). Be sure to include a title and clear description, as much relevant information as possible, and a code sample or an executable test case demonstrating the expected behavior that is not occurring.
+1. Ensure the bug was not already reported by searching on GitHub under [Issues](https://github.com/pseudotensor/open-strawberry/issues).
+2. If you're unable to find an open issue addressing the problem, [open a new one](https://github.com/pseudotensor/open-strawberry/issues/new). Be sure to include a title and clear description, as much relevant information as possible, and a code sample or an executable test case demonstrating the expected behavior that is not occurring.
 
 ## Suggesting Enhancements
 
 1. Open a new issue with a clear title and detailed description.
 2. Provide any relevant examples or mock-ups that could help explain your suggestion.
-3. Explain why this enhancement would be useful to most OpenStrawberry users.
+3. Explain why this enhancement would be useful to most open-strawberry users.
 
 ## Pull Request Process
 
@@ -65,9 +65,9 @@ For all contributions, please first discuss the change you wish to make via issu
 
 ## Community
 
-- Join our [Slack channel](https://openstrawberry.slack.com) for discussions and questions.
-- Follow us on [Twitter](https://twitter.com/OpenStrawberry) for updates.
-- Check out our [blog](https://openstrawberry.github.io/blog) for in-depth articles and tutorials.
+- Join our [Slack channel](https://open-strawberry.slack.com) for discussions and questions.
+- Follow us on [Twitter](https://twitter.com/open-strawberry) for updates.
+- Check out our [blog](https://open-strawberry.github.io/blog) for in-depth articles and tutorials.
 - Discuss on [Discord](https://discord.com/invite/generative-h2o-ai-community-1097462770674438174) with the community.
 
-Thank you for contributing to OpenStrawberry!
+Thank you for contributing to open-strawberry!

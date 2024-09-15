@@ -1,10 +1,10 @@
-# OpenStrawberry
+# open-strawberry
 
 An open-source implementation inspired by OpenAI's Strawberry algorithm.
 
 ## Background
 
-OpenStrawberry is based on speculations about OpenAI's Strawberry, a refined search-generation algorithm for generating and verifying training data. This project aims to recreate a similar system using open-source tools and methodologies.
+open-strawberry is based on speculations about OpenAI's Strawberry, a refined search-generation algorithm for generating and verifying training data. This project aims to recreate a similar system using open-source tools and methodologies.
 
 ### Key Concepts
 
