@@ -8,27 +8,44 @@ clawd_key = os.getenv('ANTHROPIC_API_KEY')
 clawd_client = anthropic.Anthropic(api_key=clawd_key) if clawd_key else None
 
 
-def get_anthropic(model: str, prompt: str, temperature: float = 0, system: str = ''):
+def get_anthropic(model: str, prompt: str, temperature: float = 0, system: str = '', chat_history: List[Dict] = None):
+    if chat_history is None:
+        chat_history = []
+
     client = anthropic.Anthropic(api_key=clawd_key)
 
-    messages = [
-        {
-            "role": "user",
-            "content": [
-                {
-                    "type": "text",
-                    "text": prompt,
-                    "cache_control": {"type": "ephemeral"}
-                }
-            ]
-        }
-    ]
+    messages = []
+
+    # Add conversation history, removing cache_control from all but the last two user messages
+    for i, message in enumerate(chat_history):
+        if message["role"] == "user":
+            if i >= len(chat_history) - 3:  # Last two user messages
+                messages.append(message)
+            else:
+                messages.append({
+                    "role": "user",
+                    "content": [{"type": "text", "text": message["content"][0]["text"]}]
+                })
+        else:
+            messages.append(message)
+
+    # Add the new user message
+    messages.append({
+        "role": "user",
+        "content": [
+            {
+                "type": "text",
+                "text": prompt,
+                "cache_control": {"type": "ephemeral"}
+            }
+        ]
+    })
 
     response = client.beta.prompt_caching.messages.create(
         model=model,
         max_tokens=1024,
         temperature=temperature,
-        system=system,
+        system=system,  # Pass system message as a separate parameter
         messages=messages
     )
 
@@ -36,32 +53,41 @@ def get_anthropic(model: str, prompt: str, temperature: float = 0, system: str =
 
 
 def manage_conversation(model: str, system: str, initial_prompt: str, num_turns: int = 10):
-    conversation_history = []
+    chat_history = []
 
     # Start with the initial prompt
     response_text, _ = get_anthropic(model, initial_prompt, system=system)
     print("Assistant:", response_text)
 
-    conversation_history.append({"role": "user", "content": initial_prompt})
-    conversation_history.append({"role": "assistant", "content": response_text})
+    chat_history.append({
+        "role": "user",
+        "content": [
+            {
+                "type": "text",
+                "text": initial_prompt,
+                "cache_control": {"type": "ephemeral"}
+            }
+        ]
+    })
+    chat_history.append({"role": "assistant", "content": response_text})
 
     turn_count = 1
 
     while True:
-        # Construct the prompt based on the entire conversation history
-        full_prompt = initial_prompt + "\n\n"
-        for msg in conversation_history[1:]:  # Skip the initial prompt
-            if msg["role"] == "user":
-                full_prompt += f"Human: {msg['content']}\n"
-            else:
-                full_prompt += f"Assistant: {msg['content']}\n"
-        full_prompt += "Human: next\n\nAssistant:"
-
-        response_text, _ = get_anthropic(model, full_prompt, system=system)
+        response_text, _ = get_anthropic(model, "next", system=system, chat_history=chat_history)
         print("Assistant:", response_text)
 
-        conversation_history.append({"role": "user", "content": "next"})
-        conversation_history.append({"role": "assistant", "content": response_text})
+        chat_history.append({
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "next",
+                    "cache_control": {"type": "ephemeral"}
+                }
+            ]
+        })
+        chat_history.append({"role": "assistant", "content": response_text})
 
         turn_count += 1
 
@@ -70,7 +96,7 @@ def manage_conversation(model: str, system: str, initial_prompt: str, num_turns:
             if user_input.lower() != 'yes':
                 break
 
-    return conversation_history
+    return chat_history
 
 
 def go():
@@ -87,6 +113,14 @@ def go():
     Are you ready to win the game?"""
 
     initial_prompt = "Let's solve a complex math problem: Find the roots of the equation x^3 - 6x^2 + 11x - 6 = 0"
+
+    initial_prompt = """Can you crack the code?
+    9 2 8 5 (One number is correct but in the wrong position)
+    1 9 3 7 (Two numbers are correct but in the wrong positions)
+    5 2 0 1 (one number is correct and in the right position)
+    6 5 0 7 (nothing is correct)
+    8 5 2 4 (two numbers are correct but in the wrong positions)"""
+
     # model = "claude-3-5-sonnet-20240620"
     model = "claude-3-haiku-20240307"
     conversation_history = manage_conversation(model, system_prompt, initial_prompt)
