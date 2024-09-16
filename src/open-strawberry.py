@@ -1,9 +1,12 @@
 import os
+from typing import List, Dict
 
 # https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching
 import anthropic
+
 clawd_key = os.getenv('ANTHROPIC_API_KEY')
 clawd_client = anthropic.Anthropic(api_key=clawd_key) if clawd_key else None
+
 
 def get_anthropic(model: str, prompt: str, temperature: float = 0, system: str = ''):
     message = clawd_client.messages.create(
@@ -12,16 +15,19 @@ def get_anthropic(model: str, prompt: str, temperature: float = 0, system: str =
         temperature=temperature,
         messages=[
             {"role": "system", "content": system},
-          {"role": "user", "content": prompt}
+            {"role": "user", "content": prompt}
         ],
         system=system,
     )
     return message.content[0].text
 
+
 # Also applies to ollama, vLLM, h2oGPT, etc.
 from openai import OpenAI
+
 openai_key = os.getenv('OPENAI_API_KEY')
 openai_client = OpenAI(api_key=openai_key) if openai_key else None
+
 
 def get_openai(model: str, prompt: str, temperature: float = 0, system: str = ''):
     messages = [{'role': 'system', 'content': system},
@@ -31,6 +37,8 @@ def get_openai(model: str, prompt: str, temperature: float = 0, system: str = ''
         messages=messages,
         temperature=temperature,
     )
+    return responses.choices[0].message.content
+
 
 # https://github.com/google-gemini/cookbook/
 # https://ai.google.dev/gemini-api/docs/caching?lang=python
@@ -39,11 +47,13 @@ import google.generativeai as genai
 gemini_key = os.getenv("GOOGLE_API_KEY")
 genai.configure(api_key=gemini_key) if gemini_key else None
 
+
 def get_gemini(model: str, prompt: str, temperature: float = 0, system: str = ''):
     model = genai.GenerativeModel(model, system_instruction=system, generation_config={'temperature': temperature})
     chat = model.start_chat(history=[])
     response = chat.send_message(prompt)
     return response.text
+
 
 system_prompt = """Let us play a game of "take only the most minuscule step toward the solution."
 <thinking_game>
@@ -56,4 +66,3 @@ system_prompt = """Let us play a game of "take only the most minuscule step towa
 * You should think like a human, and ensure you identify inconsistencies, errors, etc.
 </thinking_game>
 Are you ready to win the game?"""
-
