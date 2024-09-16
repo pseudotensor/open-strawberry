@@ -59,7 +59,8 @@ def get_anthropic(model: str,
             yield chunk.delta.text
 
 
-def manage_conversation(model: str, system: str, initial_prompt: str, num_turns: int = 10) -> Generator[
+def manage_conversation(model: str, system: str, initial_prompt: str, num_turns: int = 10, cli_mode: bool = False) -> \
+Generator[
     Dict, None, list]:
     chat_history = []
 
@@ -90,7 +91,10 @@ def manage_conversation(model: str, system: str, initial_prompt: str, num_turns:
 
         if turn_count % num_turns == 0:
             yield {"role": "system", "content": "pause"}
-            user_continue = yield {"role": "system", "content": "continue?"}
+            if cli_mode:
+                user_continue = input("Continue? (y/n): ").lower() == 'y'
+            else:
+                user_continue = yield {"role": "system", "content": "continue?"}
             if not user_continue:
                 break
 
@@ -123,7 +127,8 @@ initial_prompt = """Can you crack the code?
 def go():
     # model = "claude-3-5-sonnet-20240620"
     model = "claude-3-haiku-20240307"
-    generator = manage_conversation(model=model, system=system_prompt, initial_prompt=initial_prompt, num_turns=10)
+    generator = manage_conversation(model=model, system=system_prompt, initial_prompt=initial_prompt, num_turns=10,
+                                    cli_mode=True)
     response = ''
     conversation_history = []
 

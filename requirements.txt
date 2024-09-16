@@ -2,3 +2,5 @@ anthropic
 openai
 google-generativeai
 streamlit
+blinker
+click
