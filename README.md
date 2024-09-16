@@ -78,3 +78,13 @@ This project is speculative and based on publicly available information about Op
 [B7] https://arxiv.org/abs/2306.08161
 
 [B8] https://github.com/h2oai/h2ogpt
+
+[P0] Chain-of-Thought Prompting Elicits Reasoning in Large Language Models: https://arxiv.org/abs/2201.11903
+
+[P1] STaR: Bootstrapping Reasoning With Reasoning: https://arxiv.org/abs/2203.14465
+
+[P2] Let's Verify Step by Step: https://arxiv.org/abs/2305.20050
+
+[P3] Quiet-STaR: Language Models Can Teach Themselves to Think Before Speaking: https://arxiv.org/abs/2403.09629
+
+[P4] Think before you speak: Training Language Models With Pause Tokens: https://arxiv.org/abs/2310.02226
