@@ -1,61 +1,156 @@
 import streamlit as st
-
-from open_strawberry import (
-    manage_conversation,
-    system_prompt,
-    initial_prompt
-)
+import time
+from open_strawberry import manage_conversation, system_prompt, initial_prompt
 
 st.title("Open Strawberry Conversation")
 
-# Display the imported system prompt
-st.text_area("System Prompt", value=system_prompt, height=300, disabled=True)
+# Initialize session state
+if "openai_model" not in st.session_state:
+    st.session_state["openai_model"] = "claude-3-haiku-20240307"
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+if "turn_count" not in st.session_state:
+    st.session_state.turn_count = 0
+if "input_key" not in st.session_state:
+    st.session_state.input_key = 0
+if "conversation_started" not in st.session_state:
+    st.session_state.conversation_started = False
+if "waiting_for_continue" not in st.session_state:
+    st.session_state.waiting_for_continue = False
+if "generator" not in st.session_state:
+    st.session_state.generator = None  # Store the generator in session state
+if "prompt" not in st.session_state:
+    st.session_state.prompt = None  # Store the prompt in session state
 
-# Display the imported initial prompt, but allow it to be edited
-user_prompt = st.text_input("Initial Prompt", value=initial_prompt)
+NUM_TURNS = 2  # Number of turns before pausing for continuation
+
+
+# Function to display chat messages
+def display_chat():
+    for message in st.session_state.messages:
+        if message["role"] == "assistant":
+            assistant_container1 = st.chat_message("assistant")
+            with assistant_container1.container():
+                st.markdown(message["content"])
+        elif message["role"] == "user":
+            user_container1 = st.chat_message("user")
+            with user_container1:
+                st.markdown(message["content"])
+
+    # Add a dummy element at the end to ensure scrolling to the latest message
+    st.markdown("<div id='bottom'></div>", unsafe_allow_html=True)
+    st.markdown("""
+        <script>
+            var bottom = document.getElementById('bottom');
+            if (bottom) {
+                bottom.scrollIntoView({behavior: 'smooth'});
+            }
+        </script>
+    """, unsafe_allow_html=True)
+
+
+# Sidebar
+st.sidebar.title("Controls")
 
 # Model selection
-model = st.selectbox("Select Model", ["claude-3-haiku-20240307", "claude-3-sonnet-20240229"])
-
-# Initialize session state
-if 'conversation_generator' not in st.session_state:
-    st.session_state.conversation_generator = None
-
-# Start conversation button
-if st.button("Start/Continue Conversation"):
-    if st.session_state.conversation_generator is None:
-        st.session_state.conversation_generator = manage_conversation(model, system_prompt, user_prompt)
-
-    conversation_active = True
-    while conversation_active:
-        try:
-            message = next(st.session_state.conversation_generator)
-            if message["role"] == "user":
-                st.write(f"Human: {message['content']}")
-            elif message["role"] == "assistant":
-                if message.get("streaming", False):
-                    message_placeholder = st.empty()
-                    full_response = ""
-                    full_response += message["content"]
-                    message_placeholder.markdown(full_response + "▌")
-                else:
-                    st.write(f"Assistant: {message['content']}")
-            elif message["role"] == "system":
-                if message["content"] == "pause":
-                    conversation_active = False
-                elif message["content"] == "continue?":
-                    user_input = st.button("Continue?")
-                    st.session_state.conversation_generator.send(user_input)
-                elif message["content"] == "end":
-                    st.write("Conversation ended.")
-                    st.session_state.conversation_generator = None
-                    conversation_active = False
-        except StopIteration:
-            st.write("Conversation ended.")
-            st.session_state.conversation_generator = None
-            conversation_active = False
+st.sidebar.selectbox("Select Model", ["claude-3-haiku-20240307", "claude-3-5-sonnet-20240620"], key="openai_model")
 
 # Reset conversation button
-if st.button("Reset Conversation"):
-    st.session_state.conversation_generator = None
-    st.experimental_rerun()
+reset_clicked = st.sidebar.button("Reset Conversation")
+
+if reset_clicked:
+    st.session_state.messages = []
+    st.session_state.turn_count = 0
+    st.sidebar.write(f"Turn count: {st.session_state.turn_count}")
+    st.session_state.input_key += 1
+    st.session_state.conversation_started = False
+    st.session_state.generator = None  # Reset the generator
+    reset_clicked = False
+
+st.session_state.waiting_for_continue = False
+
+# Display debug information
+st.sidebar.write(f"Turn count: {st.session_state.turn_count}")
+st.sidebar.write(f"Number of messages: {len(st.session_state.messages)}")
+st.sidebar.write(f"Conversation started: {st.session_state.conversation_started}")
+
+# Handle user input
+if not st.session_state.conversation_started:
+    if not st.button("Start Conversation"):
+        prompt = st.text_area("What would you like to ask?", value=initial_prompt,
+                              key=f"input_{st.session_state.input_key}", height=500)
+        st.session_state.prompt = prompt
+    else:
+        st.session_state.conversation_started = True
+        st.session_state.input_key += 1
+else:
+    assert st.session_state.generator is not None
+
+# Display chat history
+chat_container = st.container()
+with chat_container:
+    display_chat()
+
+# Process conversation
+current_assistant_message = ''
+assistant_placeholder = None
+
+try:
+    while True:
+        if st.session_state.waiting_for_continue:
+            time.sleep(0.1)  # Short sleep to prevent excessive CPU usage
+            continue
+        if not st.session_state.conversation_started:
+            time.sleep(0.1)
+            continue
+        elif st.session_state.generator is None:
+            st.session_state.generator = manage_conversation(
+                model=st.session_state["openai_model"],
+                system=system_prompt,
+                initial_prompt=st.session_state.prompt,
+                next_prompt="next",
+                num_turns=NUM_TURNS,
+                yield_prompt=True,
+            )
+        chunk = next(st.session_state.generator)
+        if chunk["role"] == "assistant":
+            current_assistant_message += chunk["content"]
+            if assistant_placeholder is None:
+                assistant_placeholder = st.empty()  # Placeholder for assistant's message
+
+            # Update the assistant container with the progressively streaming message
+            with assistant_placeholder.container():
+                st.chat_message("assistant").markdown(current_assistant_message)  # Update in the same chat message
+
+        elif chunk["role"] == "user":
+            if current_assistant_message:
+                st.session_state.messages.append({"role": "assistant", "content": current_assistant_message})
+            # Reset assistant message when user provides input
+            # Display user message
+            user_container = st.chat_message("user")
+            with user_container:
+                st.markdown(chunk["content"])
+            st.session_state.messages.append({"role": "user", "content": chunk["content"]})
+
+            st.session_state.turn_count += 1
+            if current_assistant_message:
+                assistant_placeholder = st.empty()  # Reset placeholder
+                current_assistant_message = ""
+
+        elif chunk["role"] == "action":
+            if chunk["content"] in ["continue?"]:
+                # Continue conversation button (always visible in sidebar)
+                continue_clicked = st.sidebar.button("Continue Conversation")
+                st.session_state.waiting_for_continue = True
+            st.session_state.turn_count += 1
+            if current_assistant_message:
+                st.session_state.messages.append({"role": "assistant", "content": current_assistant_message})
+                assistant_placeholder = st.empty()  # Reset placeholder
+                current_assistant_message = ""
+            elif chunk["content"] == "end":
+                break
+
+        time.sleep(0.005)  # Small delay to prevent excessive updates
+
+except StopIteration:
+    pass

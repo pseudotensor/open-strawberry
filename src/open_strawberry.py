@@ -54,22 +54,51 @@ def get_anthropic(model: str,
         stream=True
     )
 
+    output_tokens = 0
+    input_tokens = 0
+    cache_creation_input_tokens = 0
+    cache_read_input_tokens = 0
     for chunk in response:
-        if chunk.type == "content_block_delta":
+        if chunk.type == "content_block_start":
+            # This is where we might find usage info in the future
+            pass
+        elif chunk.type == "content_block_delta":
             yield chunk.delta.text
+        elif chunk.type == "message_delta":
+            output_tokens = dict(chunk.usage).get('output_tokens', 0)
+        elif chunk.type == "message_start":
+            usage = chunk.message.usage
+            input_tokens = dict(usage).get('input_tokens', 0)
+            cache_creation_input_tokens = dict(usage).get('cache_creation_input_tokens', 0)
+            cache_read_input_tokens = dict(usage).get('cache_read_input_tokens', 0)
+        else:
+            print("Unknown chunk type:", chunk.type)
+            print("Chunk:", chunk)
+
+    # After streaming is complete, print the usage information
+    print(f"Output tokens: {output_tokens}")
+    print(f"Input tokens: {input_tokens}")
+    print(f"Cache creation input tokens: {cache_creation_input_tokens}")
+    print(f"Cache read input tokens: {cache_read_input_tokens}")
 
 
-def manage_conversation(model: str, system: str, initial_prompt: str, num_turns: int = 10, cli_mode: bool = False) -> \
-Generator[
-    Dict, None, list]:
+def manage_conversation(model: str,
+                        system: str,
+                        initial_prompt: str,
+                        next_prompt: str,
+                        num_turns: int = 10,
+                        cli_mode: bool = False,
+                        yield_prompt=True) -> Generator[Dict, None, list]:
     chat_history = []
 
     # Initial prompt
-    yield {"role": "user", "content": initial_prompt}
+    if yield_prompt:
+        yield {"role": "user", "content": initial_prompt, "chat_history": chat_history}
+    response_text = ''
     for chunk in get_anthropic(model, initial_prompt, system=system):
-        yield {"role": "assistant", "content": chunk, "streaming": True}
+        response_text += chunk
+        yield {"role": "assistant", "content": chunk, "streaming": True, "chat_history": chat_history}
 
-    response_text = "".join(chunk for chunk in get_anthropic(model, initial_prompt, system=system))
     chat_history.append(
         {"role": "user", "content": [{"type": "text", "text": initial_prompt, "cache_control": {"type": "ephemeral"}}]})
     chat_history.append({"role": "assistant", "content": response_text})
@@ -77,29 +106,26 @@ Generator[
     turn_count = 1
 
     while True:
-        yield {"role": "user", "content": "next"}
-        for chunk in get_anthropic(model, "next", system=system, chat_history=chat_history):
-            yield {"role": "assistant", "content": chunk, "streaming": True}
+        yield {"role": "user", "content": next_prompt, "chat_history": chat_history}
+        response_text = ''
+        for chunk in get_anthropic(model, next_prompt, system=system, chat_history=chat_history):
+            response_text += chunk
+            yield {"role": "assistant", "content": chunk, "streaming": True, "chat_history": chat_history}
 
-        response_text = "".join(
-            chunk for chunk in get_anthropic(model, "next", system=system, chat_history=chat_history))
         chat_history.append(
-            {"role": "user", "content": [{"type": "text", "text": "next", "cache_control": {"type": "ephemeral"}}]})
+            {"role": "user",
+             "content": [{"type": "text", "text": next_prompt, "cache_control": {"type": "ephemeral"}}]})
         chat_history.append({"role": "assistant", "content": response_text})
 
         turn_count += 1
 
         if turn_count % num_turns == 0:
-            yield {"role": "system", "content": "pause"}
             if cli_mode:
                 user_continue = input("Continue? (y/n): ").lower() == 'y'
+                if not user_continue:
+                    break
             else:
-                user_continue = yield {"role": "system", "content": "continue?"}
-            if not user_continue:
-                break
-
-    yield {"role": "system", "content": "end"}
-    return chat_history
+                yield {"role": "action", "content": "continue?", "chat_history": chat_history}
 
 
 system_prompt = """Let us play a game of "take only the most minuscule step toward the solution."
@@ -127,16 +153,21 @@ initial_prompt = """Can you crack the code?
 def go():
     # model = "claude-3-5-sonnet-20240620"
     model = "claude-3-haiku-20240307"
-    generator = manage_conversation(model=model, system=system_prompt, initial_prompt=initial_prompt, num_turns=10,
+    generator = manage_conversation(model=model, system=system_prompt,
+                                    initial_prompt=initial_prompt,
+                                    next_prompt="next",
+                                    num_turns=10,
                                     cli_mode=True)
     response = ''
     conversation_history = []
+    conversation_history_final = []
 
     try:
         while True:
             chunk = next(generator)
             if 'role' in chunk and chunk['role'] == 'assistant':
                 response += chunk['content']
+                conversation_history = chunk['chat_history']
                 print(chunk['content'], end='')
             elif 'role' in chunk and chunk['role'] == 'user':
                 print('\n', end='')  # finish assistant
@@ -145,9 +176,10 @@ def go():
     except StopIteration as e:
         # Get the return value
         if isinstance(e.value, dict):
-            conversation_history = e.value
+            conversation_history_final = e.value
 
     print("Conversation history:", conversation_history)
+    print("Conversation history final:", conversation_history_final)
 
 
 if __name__ == '__main__':
