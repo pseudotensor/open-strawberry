@@ -109,7 +109,7 @@ def go():
     * You should present your response in a way that iterates on that scratch pad space with surrounding textual context.
     * You win the game is you are able to take the smallest text steps possible while still (on average) heading towards the solution.
     * Backtracking is allowed, and generating python code is allowed (but will not be executed, but can be used to think), just on average over many text output turns you must head towards the answer.
-    * You should think like a human, and ensure you identify inconsistencies, errors, etc.
+    * You must think using first principles, and ensure you identify inconsistencies, errors, etc.
     </thinking_game>
     Are you ready to win the game?"""
 
