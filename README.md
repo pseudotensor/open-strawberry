@@ -23,6 +23,16 @@ open-strawberry is based on speculations about OpenAI's Strawberry, a refined se
 7. Select correct reasoning traces for each problem.
 8. Fine-tune a model using the selected reasoning traces.
 
+## Speculations
+
+1. MCTS, ToT, agents, etc. not required at training or inference time.
+2. Bootstrapping is key.
+   * Identify problems the instruct model can do barely with strong CoT and high temperature for some number of fixed (e.g. 20) repeats.
+   * Fine-tune the model on these reasoning traces with mix of other data as usual.
+   * Use this model to generate reasoning traces for slightly harder problems this new model can barely do.
+   * Repeat until the model can do the hardest problems, and the scope of reasoning traces as consumed more types of problems (but not all types since not always required).
+3. Emphasize first principles thinking.
+
 ## Project Goals
 
 1. Generate reasoning traces using the proposed approach.
