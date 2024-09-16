@@ -49,6 +49,7 @@ def get_anthropic(model: str, prompt: str, temperature: float = 0, system: str =
         messages=messages
     )
 
+    print(dict(response.usage))
     return response.content[0].text, response
 
 
