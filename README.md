@@ -152,3 +152,7 @@ This project is speculative and based on publicly available information about Op
 [P4] Think before you speak: Training Language Models With Pause Tokens: https://arxiv.org/abs/2310.02226
 
 [P5] Nash Learning from Human Feedback: https://arxiv.org/abs/2312.00886
+
+Related Projects:
+* https://github.com/daveshap/Raspberry
+* https://github.com/bklieger-groq/g1
