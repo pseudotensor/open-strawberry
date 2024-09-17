@@ -1,9 +1,10 @@
+import os
+
 import streamlit as st
 import time
-from open_strawberry import manage_conversation, system_prompt, initial_prompt
+from open_strawberry import manage_conversation, system_prompt, initial_prompt, next_prompts, NUM_TURNS
 
-next_prompt = "next"
-show_next = True
+show_next = False  # CHOOSE: True to show all messages, False to show only assistant messages
 
 st.title("Open Strawberry Conversation")
 
@@ -33,8 +34,6 @@ if "cache_creation_input_tokens" not in st.session_state:
 if "cache_read_input_tokens" not in st.session_state:
     st.session_state.cache_read_input_tokens = 0
 
-NUM_TURNS = 2  # Number of turns before pausing for continuation
-
 
 # Function to display chat messages
 def display_chat():
@@ -44,7 +43,7 @@ def display_chat():
             with assistant_container1.container():
                 st.markdown(message["content"])
         elif message["role"] == "user":
-            if message["content"] == next_prompt and not show_next:
+            if not message["initial"] and not show_next:
                 continue
             user_container1 = st.chat_message("user")
             with user_container1:
@@ -130,7 +129,7 @@ try:
                 model=st.session_state["openai_model"],
                 system=system_prompt,
                 initial_prompt=st.session_state.prompt,
-                next_prompt=next_prompt,
+                next_prompts=next_prompts,
                 num_turns=NUM_TURNS,
                 yield_prompt=True,
             )
@@ -149,13 +148,13 @@ try:
                 st.session_state.messages.append({"role": "assistant", "content": current_assistant_message})
             # Reset assistant message when user provides input
             # Display user message
-            if chunk["content"] == next_prompt and not show_next:
+            if not chunk["initial"] and not show_next:
                 pass
             else:
                 user_container = st.chat_message("user")
                 with user_container:
                     st.markdown(chunk["content"])
-            st.session_state.messages.append({"role": "user", "content": chunk["content"]})
+            st.session_state.messages.append({"role": "user", "content": chunk["content"], 'initial': chunk["initial"]})
 
             st.session_state.turn_count += 1
             if current_assistant_message:

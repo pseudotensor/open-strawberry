@@ -1,11 +1,43 @@
 # open-strawberry
 
-An open-source implementation inspired by OpenAI's Strawberry algorithm.
+A proof-of-concept in development for open-source implementation inspired by OpenAI's Strawberry algorithm.
+
+If you want to support the project, turn ★ into ⭐ (top-right corner) and share it with your friends.
+
+With enough support, my employer might pay for compute to generate data and fine-tune models.
+
+Contributions very welcome!
+
+## Installation
+
+```bash
+pip install -r requirements.txt
+```
+
+## Usage
+
+For demonstration purposes, Anthropic API is used, but OpenAI can be used to connect with vLLM or ollama for OSS models.
+
+UI:
+```bash
+export ANTHROPIC_API_KEY=your_api_key
+streamlit run src/app.py
+```
+or using CLI:
+```bash
+export ANTHROPIC_API_KEY=your_api_key
+python src/open_strawberry.py
+```
+
+The project is in its initial stages to explore generation of reasoning traces for specific problems as proof of concept.
 
 ![img.png](img.png)
+
 ## Background
 
-open-strawberry is based on speculations about OpenAI's Strawberry, a refined search-generation algorithm for generating and verifying training data. This project aims to recreate a similar system using open-source tools and methodologies.
+open-strawberry is based on speculations about OpenAI's Strawberry, a refined search-generation algorithm for generating and verifying training data.
+
+This project aims to recreate a similar system using open-source tools and methodologies.
 
 ### Key Concepts
 
@@ -27,15 +59,17 @@ open-strawberry is based on speculations about OpenAI's Strawberry, a refined se
 ## Speculations
 
 1. MCTS, ToT, agents, etc. not required at training or inference time.
-2. Bootstrapping is key.
+2. Bootstrapping is key (i.e. progressive learning):
    * Identify problems the instruct model can do barely with strong CoT and high temperature for some number of fixed (e.g. 20) repeats.
    * Fine-tune the model on these reasoning traces with mix of other data as usual.
    * Use this model to generate reasoning traces for slightly harder problems this new model can barely do.
    * Repeat until the model can do the hardest problems, and the scope of reasoning traces as consumed more types of problems (but not all types since not always required).
-3. Emphasize first principles thinking.
-4. Randomized useful CoT prompts for "next" from user when generating reasoning traces (e.g. not just next but "are you sure?" "any mistakes?" "how would you verify your answer?")
-5. Sometimes ask if the model is confident about an answer.  If so, then ask it to place that answer in <final_answer> xml tags.  If so, then terminate the reasoning trace generation.
-6. RLHF is not strictly required, just DPO or NLHF, where good reasoning traces are used for positive reward and bad reasoning traces are used for negative reward.
+3. Human labeling or verification of reasoning traces are not required.
+4. Verification models are not required.
+5. Emphasize first principles thinking.
+6. Randomized useful CoT prompts for "next" from user when generating reasoning traces (e.g. not just next but "are you sure?" "any mistakes?" "how would you verify your answer?")
+7. Sometimes ask if the model is confident about an answer.  If so, then ask it to place that answer in <final_answer> xml tags.  If so, then terminate the reasoning trace generation.
+8. RLHF is not strictly required, just DPO or NLHF, where good reasoning traces are used for positive reward and bad reasoning traces are used for negative reward.
 
 ## Project Goals
 
@@ -46,6 +80,20 @@ open-strawberry is based on speculations about OpenAI's Strawberry, a refined se
 ## Current Status
 
 This project is in its initial stages. Results and comparisons will be added as they become available.
+
+TODO:
+- [x] Setup basic anthropic case with prompt caching
+- [x] Setup basic streamlit app to easily monitor outputs
+- [x] Look for community support
+- [ ] Improve system prompt, vary it as well
+- [ ] Add to next prompts other [CoTs](https://github.com/h2oai/h2ogpt/blob/main/src/prompter.py#L2060-L2077)
+- [ ] Add verifier that samples window of history and separately critiques the assistant output
+- [ ] Use existing datasets with ground truth to identify problems for which CoT achieves success after some trials
+- [ ] Harvest CoT-friendly prompts and collect positive and negative reasoning traces
+- [ ] Fine-tune with DPO including with mix of normal data as well with similar distribution 
+- [ ] Repeat on next round of CoT-friendly prompts excluding original prompts, so can bootstrap
+- [ ] Fine-tune on top of Fine-tune including with mix of normal data as well with similar distribution
+- [ ] Repeat overall until bootstrap-repeat ones way to a smarter model
 
 ## Contributing
 

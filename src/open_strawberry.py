@@ -1,4 +1,5 @@
 import os
+import random
 from typing import List, Dict, Generator
 
 # https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching
@@ -6,6 +7,8 @@ import anthropic
 
 clawd_key = os.getenv('ANTHROPIC_API_KEY')
 clawd_client = anthropic.Anthropic(api_key=clawd_key) if clawd_key else None
+
+random.seed(1234)
 
 
 def get_anthropic(model: str,
@@ -85,18 +88,21 @@ def get_anthropic(model: str,
                cache_read_input_tokens=cache_read_input_tokens)
 
 
+NUM_TURNS = int(os.getenv('NUM_TURNS', '10'))  # Number of turns before pausing for continuation
+
+
 def manage_conversation(model: str,
                         system: str,
                         initial_prompt: str,
-                        next_prompt: str,
-                        num_turns: int = 10,
+                        next_prompts: List[str],
+                        num_turns: int = NUM_TURNS,
                         cli_mode: bool = False,
                         yield_prompt=True) -> Generator[Dict, None, list]:
     chat_history = []
 
     # Initial prompt
     if yield_prompt:
-        yield {"role": "user", "content": initial_prompt, "chat_history": chat_history}
+        yield {"role": "user", "content": initial_prompt, "chat_history": chat_history, "initial": True}
     response_text = ''
     for chunk in get_anthropic(model, initial_prompt, system=system):
         if 'text' in chunk and chunk['text']:
@@ -112,7 +118,8 @@ def manage_conversation(model: str,
     turn_count = 1
 
     while True:
-        yield {"role": "user", "content": next_prompt, "chat_history": chat_history}
+        next_prompt = random.choice(next_prompts)
+        yield {"role": "user", "content": next_prompt, "chat_history": chat_history, "initial": False}
 
         response_text = ''
         for chunk in get_anthropic(model, next_prompt, system=system, chat_history=chat_history):
@@ -159,13 +166,32 @@ initial_prompt = """Can you crack the code?
 6 5 0 7 (nothing is correct)
 8 5 2 4 (two numbers are correct but in the wrong positions)"""
 
+next_prompts = ["next",
+                "next",
+                "next",
+                "Are you sure?",
+                "How would you verify your answer?",
+                "Any mistakes?",
+                "Go back 3 steps and try again.",
+                "Take a deep breath and work on this problem step-by-step.",
+                "Break this down.",
+                "Please ensure you think from first principles.",
+                """List a much more general abstract versions of the original question, then describe the situation using your imagination ensuring not to over-constrain the problem, then explore in a list all the possible different constraints or lack of constraints (be sure to consider from a human viewpoint) relevant for the circumstance, then explore in a list the many extreme possibilities for issues. Let's work this out in a well-structured step-by-step thoughtful way to be sure we have the right answer. Make a final best guess using common sense.""",
+                """1) Restate the original question in elaborate form.
+2) Give an abstract version of the original question.
+3) Provide a detailed highly-accurate and well-structured response to the user's original question.
+4) Give a detailed highly-accurate and well-structured justification for the response.
+5) Evaluate your response with a score of 0 through 10.  10 means the justification perfectly explains the response to the original question and the response is perfectly accurate, 5 means the response and justification might contain some errors, 0 means the response is not accurate or is not well-justified.
+"""
+                ]
+
 
 def go():
     # model = "claude-3-5-sonnet-20240620"
     model = "claude-3-haiku-20240307"
     generator = manage_conversation(model=model, system=system_prompt,
                                     initial_prompt=initial_prompt,
-                                    next_prompt="next",
+                                    next_prompts=next_prompts,
                                     num_turns=10,
                                     cli_mode=True)
     response = ''
