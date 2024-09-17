@@ -10,6 +10,9 @@ clawd_client = anthropic.Anthropic(api_key=clawd_key) if clawd_key else None
 
 random.seed(1234)
 
+show_next = False  # CHOOSE: True to show all messages, False to show only assistant messages
+verbose = False  # CHOOSE: True to show usage information, False to hide it
+
 
 def get_anthropic(model: str,
                   prompt: str,
@@ -75,14 +78,16 @@ def get_anthropic(model: str,
             cache_creation_input_tokens = dict(usage).get('cache_creation_input_tokens', 0)
             cache_read_input_tokens = dict(usage).get('cache_read_input_tokens', 0)
         else:
-            print("Unknown chunk type:", chunk.type)
-            print("Chunk:", chunk)
+            if verbose:
+                print("Unknown chunk type:", chunk.type)
+                print("Chunk:", chunk)
 
-    # After streaming is complete, print the usage information
-    print(f"Output tokens: {output_tokens}")
-    print(f"Input tokens: {input_tokens}")
-    print(f"Cache creation input tokens: {cache_creation_input_tokens}")
-    print(f"Cache read input tokens: {cache_read_input_tokens}")
+    if verbose:
+        # After streaming is complete, print the usage information
+        print(f"Output tokens: {output_tokens}")
+        print(f"Input tokens: {input_tokens}")
+        print(f"Cache creation input tokens: {cache_creation_input_tokens}")
+        print(f"Cache read input tokens: {cache_read_input_tokens}")
     yield dict(output_tokens=output_tokens, input_tokens=input_tokens,
                cache_creation_input_tokens=cache_creation_input_tokens,
                cache_read_input_tokens=cache_read_input_tokens)
@@ -196,7 +201,6 @@ def go():
                                     cli_mode=True)
     response = ''
     conversation_history = []
-    conversation_history_final = []
 
     try:
         while True:
@@ -206,16 +210,15 @@ def go():
                 conversation_history = chunk['chat_history']
                 print(chunk['content'], end='')
             elif 'role' in chunk and chunk['role'] == 'user':
+                if not chunk['initial'] and not show_next:
+                    continue
                 print('\n', end='')  # finish assistant
                 print('\nUser: ', chunk['content'], end='\n\n')
                 print('\nAssistant:\n\n ')
     except StopIteration as e:
-        # Get the return value
-        if isinstance(e.value, dict):
-            conversation_history_final = e.value
+        pass
 
     print("Conversation history:", conversation_history)
-    print("Conversation history final:", conversation_history_final)
 
 
 if __name__ == '__main__':

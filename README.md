@@ -31,6 +31,8 @@ python src/open_strawberry.py
 
 The project is in its initial stages to explore generation of reasoning traces for specific problems as proof of concept.
 
+Note that the demo prompt is beyond Haiku's reach but preliminary results for sonnet3.5, gpt-4o, and LLaMa 3.1 405b, show promise.
+
 ![img_1.png](img_1.png)
 
 ## Background

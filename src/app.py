@@ -1,10 +1,6 @@
-import os
-
 import streamlit as st
 import time
-from open_strawberry import manage_conversation, system_prompt, initial_prompt, next_prompts, NUM_TURNS
-
-show_next = False  # CHOOSE: True to show all messages, False to show only assistant messages
+from open_strawberry import manage_conversation, system_prompt, initial_prompt, next_prompts, NUM_TURNS, show_next
 
 st.title("Open Strawberry Conversation")
 
