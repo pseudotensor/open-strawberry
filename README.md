@@ -31,7 +31,7 @@ python src/open_strawberry.py
 
 The project is in its initial stages to explore generation of reasoning traces for specific problems as proof of concept.
 
-![img.png](img.png)
+![img_1.png](img_1.png)
 
 ## Background
 
