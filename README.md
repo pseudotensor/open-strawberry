@@ -19,16 +19,19 @@ pip install -r requirements.txt
 
 For demonstration purposes, Anthropic API is used, but OpenAI can be used to connect with vLLM or ollama for OSS models.
 
-UI:
+Using UI:
 ```bash
 export ANTHROPIC_API_KEY=your_api_key
 streamlit run src/app.py
 ```
-or using CLI:
+then open the browser to http://localhost:8501 (should pop-up automatically).
+
+Using CLI:
 ```bash
 export ANTHROPIC_API_KEY=your_api_key
 python src/open_strawberry.py
 ```
+then choose prompt.
 
 The project is in its initial stages to explore generation of reasoning traces for specific problems as proof of concept.
 
