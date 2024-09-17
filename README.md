@@ -2,6 +2,7 @@
 
 An open-source implementation inspired by OpenAI's Strawberry algorithm.
 
+![img.png](img.png)
 ## Background
 
 open-strawberry is based on speculations about OpenAI's Strawberry, a refined search-generation algorithm for generating and verifying training data. This project aims to recreate a similar system using open-source tools and methodologies.
@@ -32,6 +33,7 @@ open-strawberry is based on speculations about OpenAI's Strawberry, a refined se
    * Use this model to generate reasoning traces for slightly harder problems this new model can barely do.
    * Repeat until the model can do the hardest problems, and the scope of reasoning traces as consumed more types of problems (but not all types since not always required).
 3. Emphasize first principles thinking.
+4. Randomized useful CoT prompts for "next" from user when generating reasoning traces (e.g. not just next but "are you sure?" "any mistakes?" "how would you verify your answer?")
 
 ## Project Goals
 
@@ -41,7 +43,7 @@ open-strawberry is based on speculations about OpenAI's Strawberry, a refined se
 
 ## Current Status
 
-This project is in its initial planning stages. Results and comparisons will be added as they become available.
+This project is in its initial stages. Results and comparisons will be added as they become available.
 
 ## Contributing
 
