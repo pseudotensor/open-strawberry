@@ -2,6 +2,9 @@ import streamlit as st
 import time
 from open_strawberry import manage_conversation, system_prompt, initial_prompt
 
+next_prompt = "next"
+show_next = True
+
 st.title("Open Strawberry Conversation")
 
 # Initialize session state
@@ -41,6 +44,8 @@ def display_chat():
             with assistant_container1.container():
                 st.markdown(message["content"])
         elif message["role"] == "user":
+            if message["content"] == next_prompt and not show_next:
+                continue
             user_container1 = st.chat_message("user")
             with user_container1:
                 st.markdown(message["content"])
@@ -125,7 +130,7 @@ try:
                 model=st.session_state["openai_model"],
                 system=system_prompt,
                 initial_prompt=st.session_state.prompt,
-                next_prompt="next",
+                next_prompt=next_prompt,
                 num_turns=NUM_TURNS,
                 yield_prompt=True,
             )
@@ -144,9 +149,12 @@ try:
                 st.session_state.messages.append({"role": "assistant", "content": current_assistant_message})
             # Reset assistant message when user provides input
             # Display user message
-            user_container = st.chat_message("user")
-            with user_container:
-                st.markdown(chunk["content"])
+            if chunk["content"] == next_prompt and not show_next:
+                pass
+            else:
+                user_container = st.chat_message("user")
+                with user_container:
+                    st.markdown(chunk["content"])
             st.session_state.messages.append({"role": "user", "content": chunk["content"]})
 
             st.session_state.turn_count += 1
@@ -156,7 +164,7 @@ try:
 
         elif chunk["role"] == "action":
             if chunk["content"] in ["continue?"]:
-                # Continue conversation button (always visible in sidebar)
+                # Continue conversation button
                 continue_clicked = st.button("Continue Conversation")
                 st.session_state.waiting_for_continue = True
             st.session_state.turn_count += 1
