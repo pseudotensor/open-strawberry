@@ -87,7 +87,7 @@ TODO:
 - [x] Setup basic anthropic case with prompt caching
 - [x] Setup basic streamlit app to easily monitor outputs
 - [x] Look for community support
-- [ ] Every (say) 10 steps, ask if model thinks it has final answer, and if so then ask it to place that answer in <final_answer> xml tags for extraction and termination of the reasoning trace.
+- [x] Every (say) 9 steps, ask if model thinks it has final answer, and if so then ask it to place that answer in <final_answer> xml tags for extraction and termination of the reasoning trace.
 - [ ] Improve system prompt, vary it as well or separately from user next prompts
 - [ ] Add verifier that samples window of history and separately critiques the assistant output
 - [ ] Use existing datasets with ground truth to identify problems for which CoT achieves success after some trials

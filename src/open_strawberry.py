@@ -216,10 +216,16 @@ num_turns_final_mod = NUM_TURNS - 1  # not required, just ok value.  Could be ra
 
 
 def go():
+    initial_prompt_query = input("Enter the initial prompt (hitting enter will use default initial_prompt)\n\n")
+    if initial_prompt_query not in ['', '\n', '\r\n']:
+        initial_prompt_chosen = initial_prompt_query
+    else:
+        initial_prompt_chosen = initial_prompt
+
     # model = "claude-3-5-sonnet-20240620"
     model = "claude-3-haiku-20240307"
     generator = manage_conversation(model=model, system=system_prompt,
-                                    initial_prompt=initial_prompt,
+                                    initial_prompt=initial_prompt_chosen,
                                     next_prompts=next_prompts,
                                     final_prompt=final_prompt,
                                     num_turns_final_mod=num_turns_final_mod,
