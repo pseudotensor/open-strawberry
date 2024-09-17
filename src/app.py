@@ -74,6 +74,11 @@ if reset_clicked:
     st.session_state.conversation_started = False
     st.session_state.generator = None  # Reset the generator
     reset_clicked = False
+    st.session_state.output_tokens = 0
+    st.session_state.input_tokens = 0
+    st.session_state.cache_creation_input_tokens = 0
+    st.session_state.cache_read_input_tokens = 0
+    st.rerun()
 
 st.session_state.waiting_for_continue = False
 
@@ -152,7 +157,7 @@ try:
         elif chunk["role"] == "action":
             if chunk["content"] in ["continue?"]:
                 # Continue conversation button (always visible in sidebar)
-                continue_clicked = st.sidebar.button("Continue Conversation")
+                continue_clicked = st.button("Continue Conversation")
                 st.session_state.waiting_for_continue = True
             st.session_state.turn_count += 1
             if current_assistant_message:
