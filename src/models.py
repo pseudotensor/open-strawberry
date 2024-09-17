@@ -1,3 +1,4 @@
+import datetime
 import os
 from typing import List, Dict, Generator
 from dotenv import load_dotenv
@@ -192,18 +193,44 @@ def get_google(model: str,
         HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
         HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
     }
-    gemini_model = genai.GenerativeModel(model_name=model,
-                                         generation_config=generation_config,
-                                         safety_settings=safety_settings,
-                                         system_instruction=system,
-                                         )
-    chat = gemini_model.start_chat(history=chat_history)
-    response = chat.send_message(prompt, stream=True)
+
+    cache = None
+    # disable cache for now until work into things well
+    use_cache = False
+    if use_cache and model == 'gemini-1.5-pro':
+        from google.generativeai import caching
+        # Estimate token count (this is a rough estimate, you may need a more accurate method)
+        estimated_tokens = len(prompt.split()) + sum(len(msg['content'].split()) for msg in chat_history)
+
+        if estimated_tokens > 32000:
+            cache = caching.CachedContent.create(
+                model=model,
+                display_name=f'cache_{datetime.datetime.now().isoformat()}',
+                system_instruction=system,
+                contents=[prompt] + [msg['content'] for msg in chat_history],
+                ttl=datetime.timedelta(minutes=5),  # Set an appropriate TTL.  Short for now for cost savings.
+            )
+            gemini_model = genai.GenerativeModel.from_cached_content(cached_content=cache)
+        else:
+            gemini_model = genai.GenerativeModel(model_name=model,
+                                                 generation_config=generation_config,
+                                                 safety_settings=safety_settings)
+    else:
+        gemini_model = genai.GenerativeModel(model_name=model,
+                                             generation_config=generation_config,
+                                             safety_settings=safety_settings)
+
+    if cache:
+        response = gemini_model.generate_content(prompt, stream=True)
+    else:
+        chat = gemini_model.start_chat(history=chat_history)
+        response = chat.send_message(prompt, stream=True)
 
     output_tokens = 0
     input_tokens = 0
     cache_read_input_tokens = 0
     cache_creation_input_tokens = 0
+
     for chunk in response:
         if chunk.text:
             yield dict(text=chunk.text)
@@ -211,14 +238,24 @@ def get_google(model: str,
             output_tokens = chunk.usage_metadata.candidates_token_count
             input_tokens = chunk.usage_metadata.prompt_token_count
             cache_read_input_tokens = chunk.usage_metadata.cached_content_token_count
-            cache_creation_input_tokens = 0
+            cache_creation_input_tokens = 0  # This might need to be updated if available in the API
 
     if verbose:
         print(f"Output tokens: {output_tokens}")
         print(f"Input tokens: {input_tokens}")
+        print(f"Cached tokens: {cache_read_input_tokens}")
+
     yield dict(output_tokens=output_tokens, input_tokens=input_tokens,
                cache_read_input_tokens=cache_read_input_tokens,
                cache_creation_input_tokens=cache_creation_input_tokens)
+
+
+def delete_cache(cache):
+    if cache:
+        cache.delete()
+        print(f"Cache {cache.display_name} deleted.")
+    else:
+        print("No cache to delete.")
 
 
 def get_groq(model: str,
