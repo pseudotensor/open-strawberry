@@ -85,8 +85,7 @@ TODO:
 - [x] Setup basic anthropic case with prompt caching
 - [x] Setup basic streamlit app to easily monitor outputs
 - [x] Look for community support
-- [ ] Improve system prompt, vary it as well
-- [ ] Add to next prompts other [CoTs](https://github.com/h2oai/h2ogpt/blob/main/src/prompter.py#L2060-L2077)
+- [ ] Improve system prompt, vary it as well or separately from user next prompts
 - [ ] Add verifier that samples window of history and separately critiques the assistant output
 - [ ] Use existing datasets with ground truth to identify problems for which CoT achieves success after some trials
 - [ ] Harvest CoT-friendly prompts and collect positive and negative reasoning traces
@@ -98,6 +97,10 @@ TODO:
 ## Contributing
 
 We welcome contributions from the community. Please see our [CONTRIBUTING.md](CONTRIBUTING.md) file for guidelines on how to participate.
+
+Issues:
+- [ ] Continue button in app leaves grayed-out old chats, best if started cleanly
+- [ ] Counting of tokens only shows up after hit continue, best if was every turn
 
 ## About the Author
 
