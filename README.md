@@ -156,3 +156,5 @@ This project is speculative and based on publicly available information about Op
 Related Projects:
 * https://github.com/daveshap/Raspberry
 * https://github.com/bklieger-groq/g1
+* https://github.com/ranfysvalle02/llm-reasoning-illusion
+* https://github.com/hijkzzz/Awesome-LLM-Strawberry
