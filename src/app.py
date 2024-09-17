@@ -1,7 +1,6 @@
 import streamlit as st
 import time
-from open_strawberry import manage_conversation, system_prompt, initial_prompt, next_prompts, NUM_TURNS, show_next, \
-    final_prompt, num_turns_final_mod
+from open_strawberry import manage_conversation, get_defaults
 
 st.title("Open Strawberry Conversation")
 
@@ -30,6 +29,11 @@ if "cache_creation_input_tokens" not in st.session_state:
     st.session_state.cache_creation_input_tokens = 0
 if "cache_read_input_tokens" not in st.session_state:
     st.session_state.cache_read_input_tokens = 0
+
+(model, system_prompt, initial_prompt, next_prompts, num_turns, show_next, final_prompt,
+ temperature, max_tokens,
+ num_turns_final_mod,
+ verbose) = get_defaults()
 
 
 # Function to display chat messages
@@ -129,7 +133,9 @@ try:
                 next_prompts=next_prompts,
                 final_prompt=final_prompt,
                 num_turns_final_mod=num_turns_final_mod,
-                num_turns=NUM_TURNS,
+                num_turns=num_turns,
+                temperature=temperature,
+                max_tokens=max_tokens,
                 yield_prompt=True,
             )
         chunk = next(st.session_state.generator)
