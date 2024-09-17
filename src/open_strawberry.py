@@ -152,7 +152,7 @@ def manage_conversation(model: str,
             pattern = fr'<{tag}>(.*?)</{tag}>'
             values = re.findall(pattern, response_text, re.DOTALL)
             if values:
-                response_text = '\n\nFINAL ANSWER:\n\n' + values[0]
+                response_text = '\n\nFINAL ANSWER:\n\n' + values[0] + '\n\n'
                 chat_history.append(
                     {"role": "user",
                      "content": [{"type": "text", "text": next_prompt, "cache_control": {"type": "ephemeral"}}]})
