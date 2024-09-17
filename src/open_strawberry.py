@@ -122,7 +122,9 @@ def manage_conversation(model: str,
                         temperature: float = 0.3,
                         max_tokens: int = 1024,
                         seed: int = 1234,
-                        yield_prompt=True) -> Generator[Dict, None, list]:
+                        yield_prompt=True,
+                        verbose=False,
+                        ) -> Generator[Dict, None, list]:
     if seed == 0:
         seed = random.randint(0, 1000000)
     random.seed(seed)
@@ -133,7 +135,8 @@ def manage_conversation(model: str,
     if yield_prompt:
         yield {"role": "user", "content": initial_prompt, "chat_history": chat_history, "initial": True}
     response_text = ''
-    for chunk in get_anthropic(model, initial_prompt, system=system, temperature=temperature, max_tokens=max_tokens):
+    for chunk in get_anthropic(model, initial_prompt, system=system,
+                               temperature=temperature, max_tokens=max_tokens, verbose=verbose):
         if 'text' in chunk and chunk['text']:
             response_text += chunk['text']
             yield {"role": "assistant", "content": chunk['text'], "streaming": True, "chat_history": chat_history}
@@ -157,7 +160,7 @@ def manage_conversation(model: str,
 
         response_text = ''
         for chunk in get_anthropic(model, next_prompt, system=system, chat_history=chat_history,
-                                   temperature=temperature, max_tokens=max_tokens):
+                                   temperature=temperature, max_tokens=max_tokens, verbose=verbose):
             if 'text' in chunk and chunk['text']:
                 response_text += chunk['text']
                 yield {"role": "assistant", "content": chunk['text'], "streaming": True, "chat_history": chat_history}

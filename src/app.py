@@ -1,8 +1,14 @@
 import streamlit as st
 import time
-from open_strawberry import manage_conversation, get_defaults
+from open_strawberry import get_defaults, manage_conversation
+
+(model, system_prompt, initial_prompt, next_prompts, num_turns, show_next, final_prompt,
+ temperature, max_tokens,
+ num_turns_final_mod,
+ verbose) = get_defaults()
 
 st.title("Open Strawberry Conversation")
+
 
 # Initialize session state
 if "openai_model" not in st.session_state:
@@ -21,6 +27,8 @@ if "generator" not in st.session_state:
     st.session_state.generator = None  # Store the generator in session state
 if "prompt" not in st.session_state:
     st.session_state.prompt = None  # Store the prompt in session state
+if "system_prompt" not in st.session_state:
+    st.session_state.system_prompt = None
 if "output_tokens" not in st.session_state:
     st.session_state.output_tokens = 0
 if "input_tokens" not in st.session_state:
@@ -29,11 +37,22 @@ if "cache_creation_input_tokens" not in st.session_state:
     st.session_state.cache_creation_input_tokens = 0
 if "cache_read_input_tokens" not in st.session_state:
     st.session_state.cache_read_input_tokens = 0
-
-(model, system_prompt, initial_prompt, next_prompts, num_turns, show_next, final_prompt,
- temperature, max_tokens,
- num_turns_final_mod,
- verbose) = get_defaults()
+#if "num_turns_final_mod" not in st.session_state:
+#    st.session_state.num_turns_final_mod = num_turns_final_mod
+#if "num_turns" not in st.session_state:
+#    st.session_state.num_turns = num_turns
+if "verbose" not in st.session_state:
+    st.session_state.verbose = verbose
+if "max_tokens" not in st.session_state:
+    st.session_state.max_tokens = max_tokens
+if "temperature" not in st.session_state:
+    st.session_state.temperature = temperature
+#if "show_next" not in st.session_state:
+#    st.session_state.show_next = show_next
+if "next_prompts" not in st.session_state:
+    st.session_state.next_prompts = next_prompts
+if "final_prompt" not in st.session_state:
+    st.session_state.final_prompt = final_prompt
 
 
 # Function to display chat messages
@@ -44,7 +63,7 @@ def display_chat():
             with assistant_container1.container():
                 st.markdown(message["content"])
         elif message["role"] == "user":
-            if not message["initial"] and not show_next:
+            if not message["initial"] and not st.session_state.show_next:
                 continue
             user_container1 = st.chat_message("user")
             with user_container1:
@@ -67,6 +86,9 @@ st.sidebar.title("Controls")
 
 # Model selection
 st.sidebar.selectbox("Select Model", ["claude-3-haiku-20240307", "claude-3-5-sonnet-20240620"], key="openai_model")
+st.sidebar.checkbox("Show Next", value=show_next, key="show_next")
+st.sidebar.number_input("Num Turns Final Mod", value=num_turns_final_mod, key="num_turns_final_mod")
+st.sidebar.number_input("Num Turns", value=num_turns, key="num_turns")
 
 # Reset conversation button
 reset_clicked = st.sidebar.button("Reset Conversation")
@@ -102,6 +124,9 @@ if not st.session_state.conversation_started:
         prompt = st.text_area("What would you like to ask?", value=initial_prompt,
                               key=f"input_{st.session_state.input_key}", height=500)
         st.session_state.prompt = prompt
+        system_prompt = st.text_area("System Prompt", value=system_prompt,
+                                             key=f"system_prompt_{st.session_state.input_key}", height=200)
+        st.session_state.system_prompt = system_prompt
     else:
         st.session_state.conversation_started = True
         st.session_state.input_key += 1
@@ -128,14 +153,15 @@ try:
         elif st.session_state.generator is None:
             st.session_state.generator = manage_conversation(
                 model=st.session_state["openai_model"],
-                system=system_prompt,
+                system=st.session_state.system_prompt,
                 initial_prompt=st.session_state.prompt,
-                next_prompts=next_prompts,
-                final_prompt=final_prompt,
-                num_turns_final_mod=num_turns_final_mod,
-                num_turns=num_turns,
-                temperature=temperature,
-                max_tokens=max_tokens,
+                next_prompts=st.session_state.next_prompts,
+                final_prompt=st.session_state.final_prompt,
+                num_turns_final_mod=st.session_state.num_turns_final_mod,
+                num_turns=st.session_state.num_turns,
+                temperature=st.session_state.temperature,
+                max_tokens=st.session_state.max_tokens,
+                verbose=st.session_state.verbose,
                 yield_prompt=True,
             )
         chunk = next(st.session_state.generator)
@@ -153,7 +179,7 @@ try:
                 st.session_state.messages.append({"role": "assistant", "content": current_assistant_message})
             # Reset assistant message when user provides input
             # Display user message
-            if not chunk["initial"] and not show_next:
+            if not chunk["initial"] and not st.session_state.show_next:
                 pass
             else:
                 user_container = st.chat_message("user")
