@@ -14,7 +14,7 @@ def get_anthropic(model: str,
                   max_tokens: int = 1024,
                   system: str = '',
                   chat_history: List[Dict] = None) -> \
-        Generator[str, None, None]:
+        Generator[dict, None, None]:
     if chat_history is None:
         chat_history = []
 
@@ -63,7 +63,7 @@ def get_anthropic(model: str,
             # This is where we might find usage info in the future
             pass
         elif chunk.type == "content_block_delta":
-            yield chunk.delta.text
+            yield dict(text=chunk.delta.text)
         elif chunk.type == "message_delta":
             output_tokens = dict(chunk.usage).get('output_tokens', 0)
         elif chunk.type == "message_start":
@@ -80,6 +80,9 @@ def get_anthropic(model: str,
     print(f"Input tokens: {input_tokens}")
     print(f"Cache creation input tokens: {cache_creation_input_tokens}")
     print(f"Cache read input tokens: {cache_read_input_tokens}")
+    yield dict(output_tokens=output_tokens, input_tokens=input_tokens,
+               cache_creation_input_tokens=cache_creation_input_tokens,
+               cache_read_input_tokens=cache_read_input_tokens)
 
 
 def manage_conversation(model: str,
@@ -96,8 +99,11 @@ def manage_conversation(model: str,
         yield {"role": "user", "content": initial_prompt, "chat_history": chat_history}
     response_text = ''
     for chunk in get_anthropic(model, initial_prompt, system=system):
-        response_text += chunk
-        yield {"role": "assistant", "content": chunk, "streaming": True, "chat_history": chat_history}
+        if 'text' in chunk and chunk['text']:
+            response_text += chunk['text']
+            yield {"role": "assistant", "content": chunk['text'], "streaming": True, "chat_history": chat_history}
+        else:
+            yield {"role": "usage", "content": chunk}
 
     chat_history.append(
         {"role": "user", "content": [{"type": "text", "text": initial_prompt, "cache_control": {"type": "ephemeral"}}]})
@@ -107,10 +113,14 @@ def manage_conversation(model: str,
 
     while True:
         yield {"role": "user", "content": next_prompt, "chat_history": chat_history}
+
         response_text = ''
         for chunk in get_anthropic(model, next_prompt, system=system, chat_history=chat_history):
-            response_text += chunk
-            yield {"role": "assistant", "content": chunk, "streaming": True, "chat_history": chat_history}
+            if 'text' in chunk and chunk['text']:
+                response_text += chunk['text']
+                yield {"role": "assistant", "content": chunk['text'], "streaming": True, "chat_history": chat_history}
+            else:
+                yield {"role": "usage", "content": chunk}
 
         chat_history.append(
             {"role": "user",

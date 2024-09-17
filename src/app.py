@@ -21,6 +21,14 @@ if "generator" not in st.session_state:
     st.session_state.generator = None  # Store the generator in session state
 if "prompt" not in st.session_state:
     st.session_state.prompt = None  # Store the prompt in session state
+if "output_tokens" not in st.session_state:
+    st.session_state.output_tokens = 0
+if "input_tokens" not in st.session_state:
+    st.session_state.input_tokens = 0
+if "cache_creation_input_tokens" not in st.session_state:
+    st.session_state.cache_creation_input_tokens = 0
+if "cache_read_input_tokens" not in st.session_state:
+    st.session_state.cache_read_input_tokens = 0
 
 NUM_TURNS = 2  # Number of turns before pausing for continuation
 
@@ -73,6 +81,10 @@ st.session_state.waiting_for_continue = False
 st.sidebar.write(f"Turn count: {st.session_state.turn_count}")
 st.sidebar.write(f"Number of messages: {len(st.session_state.messages)}")
 st.sidebar.write(f"Conversation started: {st.session_state.conversation_started}")
+st.sidebar.write(f"Output tokens: {st.session_state.output_tokens}")
+st.sidebar.write(f"Input tokens: {st.session_state.input_tokens}")
+st.sidebar.write(f"Cache creation input tokens: {st.session_state.cache_creation_input_tokens}")
+st.sidebar.write(f"Cache read input tokens: {st.session_state.cache_read_input_tokens}")
 
 # Handle user input
 if not st.session_state.conversation_started:
@@ -149,6 +161,11 @@ try:
                 current_assistant_message = ""
             elif chunk["content"] == "end":
                 break
+        elif chunk["role"] == "usage":
+            st.session_state.output_tokens += chunk["content"]["output_tokens"]
+            st.session_state.input_tokens += chunk["content"]["input_tokens"]
+            st.session_state.cache_creation_input_tokens += chunk["content"]["cache_creation_input_tokens"]
+            st.session_state.cache_read_input_tokens += chunk["content"]["cache_read_input_tokens"]
 
         time.sleep(0.005)  # Small delay to prevent excessive updates
 
