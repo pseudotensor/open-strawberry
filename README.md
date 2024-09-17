@@ -10,6 +10,7 @@ Contributions very welcome!  See my other projects like [h2oGPT](https://github.
 
 ## Installation
 
+Python >=3.10 should be fine, then:
 ```bash
 pip install -r requirements.txt
 ```
