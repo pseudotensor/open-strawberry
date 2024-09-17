@@ -1,6 +1,10 @@
+python-dotenv
+
 anthropic
 openai
 google-generativeai
+groq
+
 streamlit
 blinker
 click

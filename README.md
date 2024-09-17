@@ -17,7 +17,25 @@ pip install -r requirements.txt
 
 ## Usage
 
-For demonstration purposes, Anthropic API is used, but OpenAI can be used to connect with vLLM or ollama for OSS models.
+Fill `.env` with required API keys etc or set ENVs, e.g.:
+```.env
+# OpenAI
+OPENAI_API_KEY=
+
+# Azure
+AZURE_OPENAI_API_KEY=
+OPENAI_API_VERSION=
+AZURE_OPENAI_ENDPOINT=
+AZURE_OPENAI_DEPLOYMENT=
+
+GEMINI_API_KEY=
+MISTRAL_API_KEY=
+GROQ_API_KEY=
+ANTHROPIC_API_KEY=
+HUGGING_FACE_HUB_TOKEN=
+REPLICATE_API_TOKEN=
+TOGETHERAI_API_TOKEN=
+```
 
 Using UI:
 ```bash

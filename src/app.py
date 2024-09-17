@@ -1,6 +1,7 @@
 import streamlit as st
 import time
 from open_strawberry import get_defaults, manage_conversation
+from src.models import get_all_model_names
 
 (model, system_prompt, initial_prompt, next_prompts, num_turns, show_next, final_prompt,
  temperature, max_tokens,
@@ -85,7 +86,7 @@ def display_chat():
 st.sidebar.title("Controls")
 
 # Model selection
-st.sidebar.selectbox("Select Model", ["claude-3-haiku-20240307", "claude-3-5-sonnet-20240620"], key="openai_model")
+st.sidebar.selectbox("Select Model", get_all_model_names(), key="openai_model")
 st.sidebar.checkbox("Show Next", value=show_next, key="show_next")
 st.sidebar.number_input("Num Turns Final Mod", value=num_turns_final_mod, key="num_turns_final_mod")
 st.sidebar.number_input("Num Turns", value=num_turns, key="num_turns")
@@ -205,10 +206,10 @@ try:
             elif chunk["content"] == "end":
                 break
         elif chunk["role"] == "usage":
-            st.session_state.output_tokens += chunk["content"]["output_tokens"]
-            st.session_state.input_tokens += chunk["content"]["input_tokens"]
-            st.session_state.cache_creation_input_tokens += chunk["content"]["cache_creation_input_tokens"]
-            st.session_state.cache_read_input_tokens += chunk["content"]["cache_read_input_tokens"]
+            st.session_state.output_tokens += chunk["content"]["output_tokens"] if "output_tokens" in chunk["content"] else 0
+            st.session_state.input_tokens += chunk["content"]["input_tokens"] if "input_tokens" in chunk["content"] else 0
+            st.session_state.cache_creation_input_tokens += chunk["content"]["cache_creation_input_tokens"] if "cache_creation_input_tokens" in chunk["content"] else 0
+            st.session_state.cache_read_input_tokens += chunk["content"]["cache_read_input_tokens"] if "cache_read_input_tokens" in chunk["content"] else 0
 
         time.sleep(0.005)  # Small delay to prevent excessive updates
 

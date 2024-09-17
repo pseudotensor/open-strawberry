@@ -4,11 +4,7 @@ import random
 import re
 from typing import List, Dict, Generator
 
-# https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching
-import anthropic
-
-clawd_key = os.getenv('ANTHROPIC_API_KEY')
-clawd_client = anthropic.Anthropic(api_key=clawd_key) if clawd_key else None
+from src.models import get_model_api
 
 
 def parse_arguments(model, system_prompt, next_prompts, num_turns, show_next, final_prompt,
@@ -31,86 +27,6 @@ def parse_arguments(model, system_prompt, next_prompts, num_turns, show_next, fi
     return parser.parse_args()
 
 
-def get_anthropic(model: str,
-                  prompt: str,
-                  temperature: float = 0,
-                  max_tokens: int = 1024,
-                  system: str = '',
-                  chat_history: List[Dict] = None,
-                  verbose=False) -> \
-        Generator[dict, None, None]:
-    if chat_history is None:
-        chat_history = []
-
-    messages = []
-
-    # Add conversation history, removing cache_control from all but the last two user messages
-    for i, message in enumerate(chat_history):
-        if message["role"] == "user":
-            if i >= len(chat_history) - 3:  # Last two user messages
-                messages.append(message)
-            else:
-                messages.append({
-                    "role": "user",
-                    "content": [{"type": "text", "text": message["content"][0]["text"]}]
-                })
-        else:
-            messages.append(message)
-
-    # Add the new user message
-    messages.append({
-        "role": "user",
-        "content": [
-            {
-                "type": "text",
-                "text": prompt,
-                "cache_control": {"type": "ephemeral"}
-            }
-        ]
-    })
-
-    response = clawd_client.beta.prompt_caching.messages.create(
-        model=model,
-        max_tokens=max_tokens,
-        temperature=temperature,
-        system=system,
-        messages=messages,
-        stream=True
-    )
-
-    output_tokens = 0
-    input_tokens = 0
-    cache_creation_input_tokens = 0
-    cache_read_input_tokens = 0
-    for chunk in response:
-        if chunk.type == "content_block_start":
-            # This is where we might find usage info in the future
-            pass
-        elif chunk.type == "content_block_delta":
-            yield dict(text=chunk.delta.text)
-        elif chunk.type == "message_delta":
-            output_tokens = dict(chunk.usage).get('output_tokens', 0)
-        elif chunk.type == "message_start":
-            usage = chunk.message.usage
-            input_tokens = dict(usage).get('input_tokens', 0)
-            cache_creation_input_tokens = dict(usage).get('cache_creation_input_tokens', 0)
-            cache_read_input_tokens = dict(usage).get('cache_read_input_tokens', 0)
-        else:
-            if verbose:
-                print("Unknown chunk type:", chunk.type)
-                print("Chunk:", chunk)
-
-    if verbose:
-        # After streaming is complete, print the usage information
-        print(f"Output tokens: {output_tokens}")
-        print(f"Input tokens: {input_tokens}")
-        print(f"Cache creation input tokens: {cache_creation_input_tokens}")
-        print(f"Cache read input tokens: {cache_read_input_tokens}")
-    yield dict(output_tokens=output_tokens, input_tokens=input_tokens,
-               cache_creation_input_tokens=cache_creation_input_tokens,
-               cache_read_input_tokens=cache_read_input_tokens)
-
-
 def manage_conversation(model: str,
                         system: str,
                         initial_prompt: str,
@@ -129,14 +45,16 @@ def manage_conversation(model: str,
         seed = random.randint(0, 1000000)
     random.seed(seed)
 
+    get_model_func = get_model_api(model)
+
     chat_history = []
 
     # Initial prompt
     if yield_prompt:
         yield {"role": "user", "content": initial_prompt, "chat_history": chat_history, "initial": True}
     response_text = ''
-    for chunk in get_anthropic(model, initial_prompt, system=system,
-                               temperature=temperature, max_tokens=max_tokens, verbose=verbose):
+    for chunk in get_model_func(model, initial_prompt, system=system,
+                                temperature=temperature, max_tokens=max_tokens, verbose=verbose):
         if 'text' in chunk and chunk['text']:
             response_text += chunk['text']
             yield {"role": "assistant", "content": chunk['text'], "streaming": True, "chat_history": chat_history}
@@ -159,8 +77,8 @@ def manage_conversation(model: str,
         yield {"role": "user", "content": next_prompt, "chat_history": chat_history, "initial": False}
 
         response_text = ''
-        for chunk in get_anthropic(model, next_prompt, system=system, chat_history=chat_history,
-                                   temperature=temperature, max_tokens=max_tokens, verbose=verbose):
+        for chunk in get_model_func(model, next_prompt, system=system, chat_history=chat_history,
+                                    temperature=temperature, max_tokens=max_tokens, verbose=verbose):
             if 'text' in chunk and chunk['text']:
                 response_text += chunk['text']
                 yield {"role": "assistant", "content": chunk['text'], "streaming": True, "chat_history": chat_history}
@@ -172,7 +90,8 @@ def manage_conversation(model: str,
              "content": [{"type": "text", "text": next_prompt, "cache_control": {"type": "ephemeral"}}]})
         chat_history.append({"role": "assistant", "content": response_text})
 
-        if trying_final or True:  # FIXME: Always check for now, goes too far otherwise sometimes, but that may be good on harder problems.
+        # FIXME: Always check for now, goes too far otherwise sometimes, but that may be good on harder problems.
+        if trying_final or True:
             tag = 'final_answer'
             pattern = fr'<{tag}>(.*?)</{tag}>'
             values = re.findall(pattern, response_text, re.DOTALL)
@@ -293,6 +212,7 @@ def go():
                 print(chunk['content'], end='')
             elif 'role' in chunk and chunk['role'] == 'user':
                 if not chunk['initial'] and not show_next:
+                    print('\n\n')
                     continue
                 print('\n', end='')  # finish assistant
                 print('\nUser: ', chunk['content'], end='\n\n')
