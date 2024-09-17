@@ -6,7 +6,7 @@ If you want to support the project, turn ★ into ⭐ (top-right corner) and sha
 
 With enough support, my employer might pay for compute to generate data and fine-tune models.
 
-Contributions very welcome!
+Contributions very welcome!  See my other projects like [h2oGPT](https://github.com/h2oai/h2ogpt) and [prompt-engineering](https://github.com/pseudotensor/prompt-engineering).
 
 ## Installation
 
