@@ -1,8 +1,8 @@
+import ast
 import datetime
 import os
 from typing import List, Dict, Generator
 from dotenv import load_dotenv
-from dataclasses import asdict, dataclass
 
 # Load environment variables from .env file
 load_dotenv()
@@ -16,6 +16,8 @@ def get_anthropic(model: str,
                   chat_history: List[Dict] = None,
                   verbose=False) -> \
         Generator[dict, None, None]:
+    model = model.replace('anthropic:', '')
+
     # https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching
     import anthropic
 
@@ -101,13 +103,27 @@ def get_openai(model: str,
                system: str = '',
                chat_history: List[Dict] = None,
                verbose=False) -> Generator[dict, None, None]:
+    anthropic_models, openai_models, google_models, groq_models, azure_models, ollama = get_model_names()
+    if model in ollama:
+        model = model.replace('ollama:', '')
+        openai_key = os.getenv('OLLAMA_OPENAI_API_KEY')
+        openai_base_url = os.getenv('OLLAMA_OPENAI_BASE_URL', 'http://localhost:11434/v1/')
+    else:
+        model = model.replace('openai:', '')
+        openai_key = os.getenv('OPENAI_API_KEY')
+        openai_base_url = os.getenv('OPENAI_BASE_URL', 'https://api.openai.com/v1')
+
     from openai import OpenAI
 
-    openai_key = os.getenv('OPENAI_API_KEY')
-    openai_client = OpenAI(api_key=openai_key) if openai_key else None
+    openai_client = OpenAI(api_key=openai_key, base_url=openai_base_url) if openai_key else None
 
     if chat_history is None:
         chat_history = []
+    chat_history_copy = chat_history.copy()
+    for mi, message in enumerate(chat_history_copy):
+        if isinstance(message["content"], list):
+            chat_history_copy[mi]["content"] = message["content"][0]["text"]
+    chat_history = chat_history_copy
 
     messages = [{"role": "system", "content": system}] + chat_history + [{"role": "user", "content": prompt}]
 
@@ -116,7 +132,7 @@ def get_openai(model: str,
         messages=messages,
         temperature=temperature,
         max_tokens=max_tokens,
-        stream=True
+        stream=True,
     )
 
     output_tokens = 0
@@ -165,6 +181,8 @@ def get_google(model: str,
                system: str = '',
                chat_history: List[Dict] = None,
                verbose=False) -> Generator[dict, None, None]:
+    model = model.replace('google:', '').replace('gemini:', '')
+
     import google.generativeai as genai
 
     gemini_key = os.getenv("GEMINI_API_KEY")
@@ -265,6 +283,8 @@ def get_groq(model: str,
              system: str = '',
              chat_history: List[Dict] = None,
              verbose=False) -> Generator[dict, None, None]:
+    model = model.replace('groq:', '')
+
     from groq import Groq
 
     groq_key = os.getenv("GROQ_API_KEY")
@@ -307,6 +327,8 @@ def get_openai_azure(model: str,
                      system: str = '',
                      chat_history: List[Dict] = None,
                      verbose=False) -> Generator[dict, None, None]:
+    model = model.replace('azure:', '').replace('openai_azure:', '')
+
     from openai import AzureOpenAI
 
     azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")  # e.g. https://project.openai.azure.com
@@ -358,28 +380,43 @@ def get_model_names():
     google_models = ['gemini-1.5-pro-latest', 'gemini-1.5-flash-latest']
     groq_models = ['llama3-groq-70b-8192-tool-use-preview', 'llama3-groq-8b-8192-tool-use-preview',
                    'llama-3.1-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768']
-    ezure_models = ['azure:' + x for x in openai_models]
+    groq_models = ['groq:' + x for x in groq_models]
+    azure_models = ['azure:' + x for x in openai_models]
+    openai_models = ['openai:' + x for x in openai_models]
+    google_models = ['google:' + x for x in google_models]
+    anthropic_models = ['anthropic:' + x for x in anthropic_models]
 
-    return anthropic_models, openai_models, google_models, groq_models, ezure_models
+    ollama_model = os.getenv('OLLAMA_OPENAI_MODEL_NAME')
+    if ollama_model:
+        try:
+            ollama_model_list = ast.literal_eval(ollama_model)
+            assert isinstance(ollama_model_list, list)
+        except:
+            ollama_model_list = [ollama_model]
+    else:
+        ollama_model_list = []
+    ollama = ['ollama:' + x for x in ollama_model_list]
+
+    return anthropic_models, openai_models, google_models, groq_models, azure_models, ollama
 
 
 def get_all_model_names():
-    anthropic_models, openai_models, google_models, groq_models, ezure_models = get_model_names()
-    return anthropic_models + openai_models + google_models + groq_models + ezure_models
+    anthropic_models, openai_models, google_models, groq_models, azure_models, ollama = get_model_names()
+    return anthropic_models + openai_models + google_models + groq_models + azure_models + ollama
 
 
 def get_model_api(model: str):
-    anthropic_models, openai_models, google_models, groq_models, ezure_models = get_model_names()
+    anthropic_models, openai_models, google_models, groq_models, azure_models, ollama = get_model_names()
 
     if model in anthropic_models:
         return get_anthropic
-    elif model in openai_models:
+    elif model in openai_models + ollama:
         return get_openai
     elif model in google_models:
         return get_google
     elif model in groq_models:
         return get_groq
-    elif model in ezure_models:
+    elif model in azure_models:
         return get_openai_azure
     else:
         raise ValueError(f"Unsupported model: {model}")

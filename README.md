@@ -21,6 +21,13 @@ Fill `.env` with required API keys etc or set ENVs, e.g.:
 ```.env
 # OpenAI
 OPENAI_API_KEY=
+OPENAI_BASE_URL=
+
+# ollama
+OLLAMA_OPENAI_API_KEY=
+OLLAMA_OPENAI_BASE_URL=
+# quoted list of strings or string
+OLLAMA_OPENAI_MODEL_NAME=
 
 # Azure
 AZURE_OPENAI_API_KEY=
@@ -28,14 +35,28 @@ OPENAI_API_VERSION=
 AZURE_OPENAI_ENDPOINT=
 AZURE_OPENAI_DEPLOYMENT=
 
+# Others
 GEMINI_API_KEY=
 MISTRAL_API_KEY=
 GROQ_API_KEY=
 ANTHROPIC_API_KEY=
+
+# WIP: not yet used
 HUGGING_FACE_HUB_TOKEN=
 REPLICATE_API_TOKEN=
 TOGETHERAI_API_TOKEN=
 ```
+
+### ollama
+
+For ollama, one can use the OpenAI service:
+```bash
+#Shut down ollama and re-run on whichever GPUs wanted:
+sudo systemctl stop ollama.service
+CUDA_VISIBLE_DEVICES=0 OLLAMA_HOST=0.0.0.0:11434 ollama serve &> ollama.log &
+ollama run mistral:v0.3
+```
+then choose set `.env` with `OLLAMA_OPENAI_BASE_URL=http://localhost:11434/v1/` and e.g. `OLLAMA_OPENAI_MODEL_NAME=ollama:mistral:v0.3` or list of ollama models: `OLLAMA_OPENAI_MODEL_NAME="[ollama:mistral:v0.3"]`.
 
 Using UI:
 ```bash

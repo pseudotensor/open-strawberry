@@ -13,7 +13,7 @@ st.title("Open Strawberry Conversation")
 
 # Initialize session state
 if "openai_model" not in st.session_state:
-    st.session_state["openai_model"] = "claude-3-haiku-20240307"
+    st.session_state["openai_model"] = "anthropic:claude-3-haiku-20240307"
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "turn_count" not in st.session_state:
