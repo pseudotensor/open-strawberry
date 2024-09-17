@@ -65,11 +65,10 @@ This project aims to recreate a similar system using open-source tools and metho
    * Use this model to generate reasoning traces for slightly harder problems this new model can barely do.
    * Repeat until the model can do the hardest problems, and the scope of reasoning traces as consumed more types of problems (but not all types since not always required).
 3. Human labeling or verification of reasoning traces are not required.
-4. Verification models are not required.
-5. Emphasize first principles thinking.
-6. Randomized useful CoT prompts for "next" from user when generating reasoning traces (e.g. not just next but "are you sure?" "any mistakes?" "how would you verify your answer?")
-7. Sometimes ask if the model is confident about an answer.  If so, then ask it to place that answer in <final_answer> xml tags.  If so, then terminate the reasoning trace generation.
-8. RLHF is not strictly required, just DPO or NLHF, where good reasoning traces are used for positive reward and bad reasoning traces are used for negative reward.
+4. Fine-tuned models for verification are not required.
+5. Randomized useful CoT prompts for "next" from user when generating reasoning traces (e.g. not just next but "are you sure?" "any mistakes?" "how would you verify your answer?")
+6. Sometimes ask if the model is confident about an answer.  If so, then ask it to place that answer in <final_answer> xml tags.  If so, then terminate the reasoning trace generation.
+7. RLHF is not strictly required, just DPO or NLHF, where good reasoning traces are used for positive reward and bad reasoning traces are used for negative reward.
 
 ## Project Goals
 
@@ -85,6 +84,7 @@ TODO:
 - [x] Setup basic anthropic case with prompt caching
 - [x] Setup basic streamlit app to easily monitor outputs
 - [x] Look for community support
+- [ ] Every (say) 10 steps, ask if model thinks it has final answer, and if so then ask it to place that answer in <final_answer> xml tags for extraction and termination of the reasoning trace.
 - [ ] Improve system prompt, vary it as well or separately from user next prompts
 - [ ] Add verifier that samples window of history and separately critiques the assistant output
 - [ ] Use existing datasets with ground truth to identify problems for which CoT achieves success after some trials
