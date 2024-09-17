@@ -1,5 +1,6 @@
 import os
 import random
+import re
 from typing import List, Dict, Generator
 
 # https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching
@@ -100,7 +101,9 @@ def manage_conversation(model: str,
                         system: str,
                         initial_prompt: str,
                         next_prompts: List[str],
+                        final_prompt: str = "",
                         num_turns: int = NUM_TURNS,
+                        num_turns_final_mod: int = 10,
                         cli_mode: bool = False,
                         yield_prompt=True) -> Generator[Dict, None, list]:
     chat_history = []
@@ -123,7 +126,12 @@ def manage_conversation(model: str,
     turn_count = 1
 
     while True:
-        next_prompt = random.choice(next_prompts)
+        if turn_count % num_turns_final_mod == 0 and turn_count > 0:
+            trying_final = True
+            next_prompt = final_prompt
+        else:
+            trying_final = False
+            next_prompt = random.choice(next_prompts)
         yield {"role": "user", "content": next_prompt, "chat_history": chat_history, "initial": False}
 
         response_text = ''
@@ -138,6 +146,19 @@ def manage_conversation(model: str,
             {"role": "user",
              "content": [{"type": "text", "text": next_prompt, "cache_control": {"type": "ephemeral"}}]})
         chat_history.append({"role": "assistant", "content": response_text})
+
+        if trying_final or True:  # FIXME: Always check for now, goes too far otherwise sometimes, but that may be good on harder problems.
+            tag = 'final_answer'
+            pattern = fr'<{tag}>(.*?)</{tag}>'
+            values = re.findall(pattern, response_text, re.DOTALL)
+            if values:
+                response_text = '\n\nFINAL ANSWER:\n\n' + values[0]
+                chat_history.append(
+                    {"role": "user",
+                     "content": [{"type": "text", "text": next_prompt, "cache_control": {"type": "ephemeral"}}]})
+                chat_history.append({"role": "assistant", "content": response_text})
+                yield {"role": "assistant", "content": response_text, "streaming": True, "chat_history": chat_history}
+                break
 
         turn_count += 1
 
@@ -190,6 +211,9 @@ next_prompts = ["next",
 """
                 ]
 
+final_prompt = "Do you have very high confidence in a final answer?  If so, then put the final answer in <final_answer> </final_answer> XML tags.  If not, please continue to work on the problem."
+num_turns_final_mod = NUM_TURNS - 1  # not required, just ok value.  Could be randomized.
+
 
 def go():
     # model = "claude-3-5-sonnet-20240620"
@@ -197,7 +221,9 @@ def go():
     generator = manage_conversation(model=model, system=system_prompt,
                                     initial_prompt=initial_prompt,
                                     next_prompts=next_prompts,
-                                    num_turns=10,
+                                    final_prompt=final_prompt,
+                                    num_turns_final_mod=num_turns_final_mod,
+                                    num_turns=NUM_TURNS,
                                     cli_mode=True)
     response = ''
     conversation_history = []

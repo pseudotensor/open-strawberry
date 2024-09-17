@@ -1,6 +1,7 @@
 import streamlit as st
 import time
-from open_strawberry import manage_conversation, system_prompt, initial_prompt, next_prompts, NUM_TURNS, show_next
+from open_strawberry import manage_conversation, system_prompt, initial_prompt, next_prompts, NUM_TURNS, show_next, \
+    final_prompt, num_turns_final_mod
 
 st.title("Open Strawberry Conversation")
 
@@ -126,6 +127,8 @@ try:
                 system=system_prompt,
                 initial_prompt=st.session_state.prompt,
                 next_prompts=next_prompts,
+                final_prompt=final_prompt,
+                num_turns_final_mod=num_turns_final_mod,
                 num_turns=NUM_TURNS,
                 yield_prompt=True,
             )
