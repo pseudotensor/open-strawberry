@@ -22,7 +22,7 @@ open-strawberry is based on speculations about OpenAI's Strawberry, a refined se
 5. Generate multiple reasoning traces per problem.
 6. Apply this process to a large set of problems with verifiable ground truths.
 7. Select correct reasoning traces for each problem.
-8. Fine-tune a model using the selected reasoning traces.
+8. Fine-tune a model using the selected reasoning traces using DPO or NLHF.
 
 ## Speculations
 
@@ -34,6 +34,8 @@ open-strawberry is based on speculations about OpenAI's Strawberry, a refined se
    * Repeat until the model can do the hardest problems, and the scope of reasoning traces as consumed more types of problems (but not all types since not always required).
 3. Emphasize first principles thinking.
 4. Randomized useful CoT prompts for "next" from user when generating reasoning traces (e.g. not just next but "are you sure?" "any mistakes?" "how would you verify your answer?")
+5. Sometimes ask if the model is confident about an answer.  If so, then ask it to place that answer in <final_answer> xml tags.  If so, then terminate the reasoning trace generation.
+6. RLHF is not strictly required, just DPO or NLHF, where good reasoning traces are used for positive reward and bad reasoning traces are used for negative reward.
 
 ## Project Goals
 
@@ -90,3 +92,5 @@ This project is speculative and based on publicly available information about Op
 [P3] Quiet-STaR: Language Models Can Teach Themselves to Think Before Speaking: https://arxiv.org/abs/2403.09629
 
 [P4] Think before you speak: Training Language Models With Pause Tokens: https://arxiv.org/abs/2310.02226
+
+[P5] Nash Learning from Human Feedback: https://arxiv.org/abs/2312.00886
