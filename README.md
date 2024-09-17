@@ -45,7 +45,7 @@ open-strawberry is based on speculations about OpenAI's Strawberry, a refined se
 
 This project aims to recreate a similar system using open-source tools and methodologies.
 
-### Definitions
+### Speculative Definitions
 
 - **Q***: A hypothetical primordial search-generation algorithm developed by OpenAI to generate training data.
 - **Strawberry**: An advanced search-generation algorithm by OpenAI for generating and verifying training data.
