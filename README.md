@@ -96,36 +96,42 @@ This project aims to recreate a similar system using open-source tools and metho
 - **o1**: GPT-4o and GPT-4o-mini based but fine-tuned on Strawberry data, including o1-mini, o1-preview, o1, and o1-ioi. [1]
 - **Orion**: GPT-5-based model that incorporates Strawberry's synthetic data and manages 0-shot vs. long reasoning queries better.
 
-## Proposed Methodology
+## Generating Reasoning Traces
 
-1. Bootstrap using SFT-instruction tuned models and their chat history.
+Bootstrapping is key via progressive learning.
+
+1. Bootstrap starting from existing supervised fine-tuned, instruction-tuned, preference-tuned models using multi-turn chat history.
 2. Implement a prompt system that guides the LLM to take incremental steps towards a solution.
-3. Generate multi-turn chat reasoning traces, periodically checking for a final answer.
-4. Employ a verification system to check for errors in the chat history.
-5. Generate multiple reasoning traces per problem.
-6. Apply this process to a large set of problems with verifiable ground truths.
-7. Select correct reasoning traces for each problem.
-8. Fine-tune a model using the selected reasoning traces using DPO or NLHF.
+3. Randomized useful CoT prompts from user (e.g. not just next but "are you sure?" "any mistakes?" "how would you verify your answer?") to illicit diverse reasoning and introspection.
+4. Generate multi-turn chat reasoning traces
+5. Sometimes ask if the model is confident about an answer.  If so, then ask it to place that answer in <final_answer> xml tags.  If done, then terminate the reasoning trace generation.
+6. Employ a verification system to check for errors in the chat history.
+7. Generate multiple reasoning traces per problem.
+8. Apply this process to a large set of problems with verifiable ground truths.
+9. Identify problems the existing instruct model can do just barely with strong CoT and high temperature for some number of fixed (e.g. 20) repeats.
+ 
+## Fine-Tuning on Reasoning Traces
+
+1. Select correct and incorrect reasoning traces for each problem based upon the ground truth.
+2. Fine-tune a model using the selected reasoning traces using DPO or NLHF, where the preference is positive for correct traces, negative for incorrect traces.
+3. Skew the preference weight by number of steps taken, i.e. if incorrect, then longer negative traces should get larger negative reward.  Correct traces that are shorter should get more positive reward.
+4. Fine-tune the model on these reasoning traces with mix of other data as usual.
+5. Use this model to generate reasoning traces for slightly harder problems this new model can barely do.
+
+Repeat generation of reasoning traces and fine-tuning until the model can do the hardest problems, such that the scope of reasoning traces as consumed more types of problems (but not all types since not always required).
 
 ## Speculations
 
 1. MCTS, ToT, agents, etc. not required at training or inference time.
-2. Bootstrapping is key (i.e. progressive learning):
-   * Identify problems the instruct model can do barely with strong CoT and high temperature for some number of fixed (e.g. 20) repeats.
-   * Fine-tune the model on these reasoning traces with mix of other data as usual.
-   * Use this model to generate reasoning traces for slightly harder problems this new model can barely do.
-   * Repeat until the model can do the hardest problems, and the scope of reasoning traces as consumed more types of problems (but not all types since not always required).
-3. Human labeling or verification of reasoning traces are not required.
-4. Fine-tuned models for verification are not required.
-5. Randomized useful CoT prompts for "next" from user when generating reasoning traces (e.g. not just next but "are you sure?" "any mistakes?" "how would you verify your answer?")
-6. Sometimes ask if the model is confident about an answer.  If so, then ask it to place that answer in <final_answer> xml tags.  If so, then terminate the reasoning trace generation.
-7. RLHF is not strictly required, just DPO or NLHF, where good reasoning traces are used for positive reward and bad reasoning traces are used for negative reward.
+2. Human labeling or human verification of reasoning traces are not required.
+3. Fine-tuned models for verification are not required, whichever step.
+4. RLHF is not strictly required, just DPO.
 
 ## Project Goals
 
 1. Generate reasoning traces using the proposed approach.
 2. Fine-tune a model on the generated reasoning traces.
-3. Evaluate the performance and compare it with existing models.
+3. Evaluate the performance and compare it with existing models with zero-shot, few-shot, CoT, etc.
 
 Other projects:
 * Key difference with [Raspberry](https://github.com/daveshap/Raspberry) is that they are focused on hard prompts, while we think a progressive learning approach with repeated fine-tuning will bootstrap towards o1.
@@ -143,7 +149,7 @@ TODO:
 - [x] Every (say) 9 steps, ask if model thinks it has final answer, and if so then ask it to place that answer in <final_answer> xml tags for extraction and termination of the reasoning trace.
 - [x] Add backoff
 - [x] Add ollama, google, azure, openai, groq, anthropic APIs with prompt caching for anthropic
-- [ ] Add high-level summary of blocks of text like o1
+- [x] Add high-level summary of blocks of text like o1
 - [ ] Improve system prompt, vary it as well or separately from user next prompts
 - [ ] Add verifier that samples window of history and separately critiques the assistant output
 - [ ] Use existing datasets with ground truth to identify problems for which CoT achieves success after some trials

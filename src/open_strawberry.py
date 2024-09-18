@@ -1,6 +1,5 @@
 import os
 import random
-import re
 import time
 from typing import List, Dict, Generator
 
@@ -140,8 +139,8 @@ def get_defaults():
 3) If you have very high confidence AND you have fully verified your answer with all resources possible, then put the final answer in <final_answer> </final_answer> XML tags, otherwise please continue to vigorously work on the user's original query.
 """
 
-    NUM_TURNS = int(os.getenv('NUM_TURNS', '10'))  # Number of turns before pausing for continuation
-    num_turns_final_mod = NUM_TURNS - 1  # not required, just ok value.  Could be randomized.
+    num_turns = int(os.getenv('NUM_TURNS', '10'))  # Number of turns before pausing for continuation
+    num_turns_final_mod = num_turns - 1  # not required, just ok value.  Could be randomized.
 
     show_next = False
     show_cot = False
@@ -157,7 +156,7 @@ def get_defaults():
             initial_prompt,
             expected_answer,
             next_prompts,
-            NUM_TURNS, show_next, final_prompt,
+            num_turns, show_next, final_prompt,
             temperature, max_tokens,
             num_turns_final_mod,
             show_cot,
