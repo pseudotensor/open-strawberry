@@ -7,6 +7,11 @@ from src.models import get_model_api
 from src.utils import get_turn_title, get_final_answer
 
 
+def get_last_assistant_responses(chat_history, n=3):
+    assistant_messages = [msg['content'] for msg in chat_history if msg['role'] == 'assistant']
+    return assistant_messages[-n:]
+
+
 def manage_conversation(model: str,
                         system: str,
                         initial_prompt: str,
@@ -19,6 +24,7 @@ def manage_conversation(model: str,
                         max_tokens: int = 1024,
                         seed: int = 1234,
                         verbose=False,
+                        verification_interval: int = 5
                         ) -> Generator[Dict, None, list]:
     if seed == 0:
         seed = random.randint(0, 1000000)
@@ -30,14 +36,21 @@ def manage_conversation(model: str,
     total_thinking_time = 0
     while True:
         trying_final = False
-        if turn_count == 0:
-            prompt = initial_prompt
-        elif turn_count % num_turns_final_mod == 0 and turn_count > 0:
-            trying_final = True
-            prompt = final_prompt
+        if turn_count % verification_interval == 0 and turn_count > 0:
+            # Perform verification step
+            last_responses = get_last_assistant_responses(chat_history, n=3)
+            verification_prompt = "Please review your previous reasoning steps and check for any mistakes or inconsistencies. If you find any errors, please correct them and explain your corrections. Here are your previous reasoning steps:\n\n" + "\n\n".join(last_responses)
+            prompt = verification_prompt
+            yield {"role": "user", "content": prompt, "chat_history": chat_history, "verification": True, "initial": False}
         else:
-            prompt = random.choice(next_prompts)
-        yield {"role": "user", "content": prompt, "chat_history": chat_history, "initial": turn_count == 0}
+            if turn_count == 0:
+                prompt = initial_prompt
+            elif turn_count % num_turns_final_mod == 0 and turn_count > 0:
+                trying_final = True
+                prompt = final_prompt
+            else:
+                prompt = random.choice(next_prompts)
+            yield {"role": "user", "content": prompt, "chat_history": chat_history, "initial": turn_count == 0}
 
         thinking_time = time.time()
         response_text = ''
@@ -61,9 +74,9 @@ def manage_conversation(model: str,
              "content": [{"type": "text", "text": prompt, "cache_control": {"type": "ephemeral"}}]})
         chat_history.append({"role": "assistant", "content": response_text})
 
-        # FIXME: Always check for now, goes too far otherwise sometimes, but that may be good on harder problems.
-        always_check_final = True
-        if trying_final or always_check_final:
+        # Adjusted to only check final answer when trying_final is True
+        always_check_final = False
+        if trying_final:
             final_value = get_final_answer(response_text, cli_mode=cli_mode)
             if final_value:
                 chat_history.append({"role": "assistant", "content": final_value})
@@ -85,19 +98,19 @@ def manage_conversation(model: str,
 
 def get_defaults():
     system_prompt = """Let us play a game of "take only the most minuscule step toward the solution."
-    <thinking_game>
-    * The assistant's text output must be only the very next possible step.
-    * Use your text output as a scratch pad in addition to a literal output of some next step.
-    * Everytime you make a major shift in thinking, output your high-level current thinking in <thinking> </thinking> XML tags.
-    * You should present your response in a way that iterates on that scratch pad space with surrounding textual context.
-    * You win the game is you are able to take the smallest text steps possible while still (on average) heading towards the solution.
-    * Backtracking is allowed, and generating python code is allowed (but will not be executed, but can be used to think), just on average over many text output turns you must head towards the answer.
-    * You must think using first principles, and ensure you identify inconsistencies, errors, etc.
-    * You MUST always end with a very brief natural language title (it should just describe the analysis, do not give step numbers) of what you did inside <turn_title> </turn_title> XML tags.  Only a single title is allowed.
-    </thinking_game>
-    Are you ready to win the game?"""
-
-    # initial_prompt = "Let's solve a complex math problem: Find the roots of the equation x^3 - 6x^2 + 11x - 6 = 0"
+<thinking_game>
+* The assistant's text output must be only the very next possible step.
+* Use your text output as a scratch pad in addition to a literal output of some next step.
+* Every time you make a major shift in thinking, output your high-level current thinking in <thinking> </thinking> XML tags.
+* You should present your response in a way that iterates on that scratch pad space with surrounding textual context.
+* You win the game if you are able to take the smallest text steps possible while still (on average) heading towards the solution.
+* Backtracking is allowed, and generating python code is allowed (but will not be executed, but can be used to think), just on average over many text output turns you must head towards the answer.
+* You must think using first principles, and ensure you identify inconsistencies, errors, etc.
+* Periodically, you should review your previous reasoning steps and check for errors or inconsistencies. If you find any, correct them.
+* You MUST always end with a very brief natural language title (it should just describe the analysis, do not give step numbers) of what you did inside <turn_title> </turn_title> XML tags. Only a single title is allowed.
+* Do not provide the final answer unless the user specifically requests it using the final prompt.
+</thinking_game>
+Are you ready to win the game?"""
 
     initial_prompt = """Can you crack the code?
 9 2 8 5 (One number is correct but in the wrong position)
@@ -140,7 +153,7 @@ def get_defaults():
 """
 
     num_turns = int(os.getenv('NUM_TURNS', '10'))  # Number of turns before pausing for continuation
-    num_turns_final_mod = num_turns - 1  # not required, just ok value.  Could be randomized.
+    num_turns_final_mod = num_turns - 1  # Not required, just an OK value. Could be randomized.
 
     show_next = False
     show_cot = False
