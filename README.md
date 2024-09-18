@@ -1,5 +1,7 @@
 # open-strawberry
 
+![img_0.png](img_0.png)
+
 A proof-of-concept to construct of reasoning traces to build an open-source version of OpenAI o1 as inspired by OpenAI's Strawberry algorithm.
 
 If you want to support the project, turn ★ into ⭐ (top-right corner) and share it with your friends.
