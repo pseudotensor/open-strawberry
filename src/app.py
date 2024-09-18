@@ -1,3 +1,5 @@
+import os
+
 import streamlit as st
 import time
 from open_strawberry import get_defaults, manage_conversation
@@ -9,7 +11,6 @@ from src.models import get_all_model_names
  verbose) = get_defaults()
 
 st.title("Open Strawberry Conversation")
-
 
 # Initialize session state
 if "openai_model" not in st.session_state:
@@ -38,9 +39,9 @@ if "cache_creation_input_tokens" not in st.session_state:
     st.session_state.cache_creation_input_tokens = 0
 if "cache_read_input_tokens" not in st.session_state:
     st.session_state.cache_read_input_tokens = 0
-#if "num_turns_final_mod" not in st.session_state:
+# if "num_turns_final_mod" not in st.session_state:
 #    st.session_state.num_turns_final_mod = num_turns_final_mod
-#if "num_turns" not in st.session_state:
+# if "num_turns" not in st.session_state:
 #    st.session_state.num_turns = num_turns
 if "verbose" not in st.session_state:
     st.session_state.verbose = verbose
@@ -48,7 +49,7 @@ if "max_tokens" not in st.session_state:
     st.session_state.max_tokens = max_tokens
 if "temperature" not in st.session_state:
     st.session_state.temperature = temperature
-#if "show_next" not in st.session_state:
+# if "show_next" not in st.session_state:
 #    st.session_state.show_next = show_next
 if "next_prompts" not in st.session_state:
     st.session_state.next_prompts = next_prompts
@@ -91,8 +92,29 @@ st.sidebar.checkbox("Show Next", value=show_next, key="show_next")
 st.sidebar.number_input("Num Turns Final Mod", value=num_turns_final_mod, key="num_turns_final_mod")
 st.sidebar.number_input("Num Turns", value=num_turns, key="num_turns")
 
+
+def save_env_vars(env_vars):
+    env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
+    from dotenv import set_key
+    for key, value in env_vars.items():
+        set_key(env_path, key, value)
+
+
+def get_dotenv_values():
+    from dotenv import dotenv_values
+    return dotenv_values(os.path.join(os.path.dirname(__file__), "..", ".env"))
+
+
 # Reset conversation button
 reset_clicked = st.sidebar.button("Reset Conversation")
+with st.sidebar.expander("Edit dotenv"):
+    dotenv_dict = get_dotenv_values()
+    new_env = {}
+    for k, v in dotenv_dict.items():
+        new_env[k] = st.text_input(k, value=v, key=k)
+    if st.button("Save dotenv"):
+        save_env_vars(new_env)
+        st.success("dotenv saved")
 
 if reset_clicked:
     st.session_state.messages = []
@@ -126,7 +148,7 @@ if not st.session_state.conversation_started:
                               key=f"input_{st.session_state.input_key}", height=500)
         st.session_state.prompt = prompt
         system_prompt = st.text_area("System Prompt", value=system_prompt,
-                                             key=f"system_prompt_{st.session_state.input_key}", height=200)
+                                     key=f"system_prompt_{st.session_state.input_key}", height=200)
         st.session_state.system_prompt = system_prompt
     else:
         st.session_state.conversation_started = True
@@ -206,10 +228,14 @@ try:
             elif chunk["content"] == "end":
                 break
         elif chunk["role"] == "usage":
-            st.session_state.output_tokens += chunk["content"]["output_tokens"] if "output_tokens" in chunk["content"] else 0
-            st.session_state.input_tokens += chunk["content"]["input_tokens"] if "input_tokens" in chunk["content"] else 0
-            st.session_state.cache_creation_input_tokens += chunk["content"]["cache_creation_input_tokens"] if "cache_creation_input_tokens" in chunk["content"] else 0
-            st.session_state.cache_read_input_tokens += chunk["content"]["cache_read_input_tokens"] if "cache_read_input_tokens" in chunk["content"] else 0
+            st.session_state.output_tokens += chunk["content"]["output_tokens"] if "output_tokens" in chunk[
+                "content"] else 0
+            st.session_state.input_tokens += chunk["content"]["input_tokens"] if "input_tokens" in chunk[
+                "content"] else 0
+            st.session_state.cache_creation_input_tokens += chunk["content"][
+                "cache_creation_input_tokens"] if "cache_creation_input_tokens" in chunk["content"] else 0
+            st.session_state.cache_read_input_tokens += chunk["content"][
+                "cache_read_input_tokens"] if "cache_read_input_tokens" in chunk["content"] else 0
 
         time.sleep(0.005)  # Small delay to prevent excessive updates
 
