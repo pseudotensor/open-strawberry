@@ -19,6 +19,7 @@ def parse_arguments(model, system_prompt, next_prompts, num_turns, show_next, fi
                         help="Number of turns before pausing for continuation")
     parser.add_argument("--model", type=str, default=model, help="Model to use for conversation")
     parser.add_argument("--initial_prompt", type=str, default='', help="Initial prompt.  If empty, then ask user.")
+    parser.add_argument("--expected_answer", type=str, default='', help="Expected answer.  If empty, then ignore.")
     parser.add_argument("--next_prompts", type=str, nargs="+", default=next_prompts, help="Next prompts")
     parser.add_argument("--final_prompt", type=str, default=final_prompt, help="Final prompt")
     parser.add_argument("--temperature", type=float, default=0.3, help="Temperature for the model")
@@ -38,56 +39,39 @@ def manage_conversation(model: str,
                         temperature: float = 0.3,
                         max_tokens: int = 1024,
                         seed: int = 1234,
-                        yield_prompt=True,
                         verbose=False,
                         ) -> Generator[Dict, None, list]:
     if seed == 0:
         seed = random.randint(0, 1000000)
     random.seed(seed)
-
     get_model_func = get_model_api(model)
-
     chat_history = []
 
-    # Initial prompt
-    if yield_prompt:
-        yield {"role": "user", "content": initial_prompt, "chat_history": chat_history, "initial": True}
-    response_text = ''
-    for chunk in get_model_func(model, initial_prompt, system=system,
-                                temperature=temperature, max_tokens=max_tokens, verbose=verbose):
-        if 'text' in chunk and chunk['text']:
-            response_text += chunk['text']
-            yield {"role": "assistant", "content": chunk['text'], "streaming": True, "chat_history": chat_history}
-        else:
-            yield {"role": "usage", "content": chunk}
-
-    chat_history.append(
-        {"role": "user", "content": [{"type": "text", "text": initial_prompt, "cache_control": {"type": "ephemeral"}}]})
-    chat_history.append({"role": "assistant", "content": response_text})
-
-    turn_count = 1
-
+    turn_count = 0
     while True:
-        if turn_count % num_turns_final_mod == 0 and turn_count > 0:
+        trying_final = False
+        if turn_count == 0:
+            prompt = initial_prompt
+        elif turn_count % num_turns_final_mod == 0 and turn_count > 0:
             trying_final = True
-            next_prompt = final_prompt
+            prompt = final_prompt
         else:
-            trying_final = False
-            next_prompt = random.choice(next_prompts)
-        yield {"role": "user", "content": next_prompt, "chat_history": chat_history, "initial": False}
+            prompt = random.choice(next_prompts)
+        yield {"role": "user", "content": prompt, "chat_history": chat_history, "initial": turn_count == 0}
 
         response_text = ''
-        for chunk in get_model_func(model, next_prompt, system=system, chat_history=chat_history,
+        for chunk in get_model_func(model, prompt, system=system, chat_history=chat_history,
                                     temperature=temperature, max_tokens=max_tokens, verbose=verbose):
             if 'text' in chunk and chunk['text']:
                 response_text += chunk['text']
-                yield {"role": "assistant", "content": chunk['text'], "streaming": True, "chat_history": chat_history}
+                yield {"role": "assistant", "content": chunk['text'], "streaming": True, "chat_history": chat_history,
+                       "final": False}
             else:
                 yield {"role": "usage", "content": chunk}
 
         chat_history.append(
             {"role": "user",
-             "content": [{"type": "text", "text": next_prompt, "cache_control": {"type": "ephemeral"}}]})
+             "content": [{"type": "text", "text": prompt, "cache_control": {"type": "ephemeral"}}]})
         chat_history.append({"role": "assistant", "content": response_text})
 
         # FIXME: Always check for now, goes too far otherwise sometimes, but that may be good on harder problems.
@@ -96,12 +80,13 @@ def manage_conversation(model: str,
             pattern = fr'<{tag}>(.*?)</{tag}>'
             values = re.findall(pattern, response_text, re.DOTALL)
             if values:
-                response_text = '\n\nFINAL ANSWER:\n\n' + values[0] + '\n\n'
-                chat_history.append(
-                    {"role": "user",
-                     "content": [{"type": "text", "text": next_prompt, "cache_control": {"type": "ephemeral"}}]})
+                if cli_mode:
+                    response_text = '\n\nFINAL ANSWER:\n\n' + values[0] + '\n\n'
+                else:
+                    response_text = values[0]
                 chat_history.append({"role": "assistant", "content": response_text})
-                yield {"role": "assistant", "content": response_text, "streaming": True, "chat_history": chat_history}
+                yield {"role": "assistant", "content": response_text, "streaming": True, "chat_history": chat_history,
+                       "final": True}
                 break
 
         turn_count += 1
@@ -131,11 +116,13 @@ def get_defaults():
     # initial_prompt = "Let's solve a complex math problem: Find the roots of the equation x^3 - 6x^2 + 11x - 6 = 0"
 
     initial_prompt = """Can you crack the code?
-    9 2 8 5 (One number is correct but in the wrong position)
-    1 9 3 7 (Two numbers are correct but in the wrong positions)
-    5 2 0 1 (one number is correct and in the right position)
-    6 5 0 7 (nothing is correct)
-    8 5 2 4 (two numbers are correct but in the wrong positions)"""
+9 2 8 5 (One number is correct but in the wrong position)
+1 9 3 7 (Two numbers are correct but in the wrong positions)
+5 2 0 1 (one number is correct and in the right position)
+6 5 0 7 (nothing is correct)
+8 5 2 4 (two numbers are correct but in the wrong positions)"""
+
+    expected_answer = "3841"
 
     next_prompts = ["continue effort to answering user's original query",
                     "continue effort to answering user's original query",
@@ -180,13 +167,18 @@ def get_defaults():
     temperature = 0.3
     max_tokens = 1024
 
-    return (model, system_prompt, initial_prompt, next_prompts, NUM_TURNS, show_next, final_prompt,
+    return (model, system_prompt,
+            initial_prompt,
+            expected_answer,
+            next_prompts,
+            NUM_TURNS, show_next, final_prompt,
             temperature, max_tokens,
             num_turns_final_mod, verbose)
 
 
 def go():
-    (model, system_prompt, initial_prompt, next_prompts, num_turns, show_next, final_prompt,
+    (model, system_prompt, initial_prompt, expected_answer,
+     next_prompts, num_turns, show_next, final_prompt,
      temperature, max_tokens, num_turns_final_mod, verbose) = get_defaults()
     args = parse_arguments(model, system_prompt, next_prompts, num_turns, show_next, final_prompt,
                            num_turns_final_mod, verbose)
@@ -232,6 +224,9 @@ def go():
         pass
 
     print("Conversation history:", conversation_history)
+
+    if expected_answer and expected_answer in conversation_history[-1]['content']:
+        print("\n\nGot Expected answer!")
 
 
 if __name__ == '__main__':

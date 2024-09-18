@@ -5,12 +5,14 @@ import time
 from open_strawberry import get_defaults, manage_conversation
 from src.models import get_all_model_names
 
-(model, system_prompt, initial_prompt, next_prompts, num_turns, show_next, final_prompt,
+(model, system_prompt, initial_prompt, expected_answer,
+ next_prompts, num_turns, show_next, final_prompt,
  temperature, max_tokens,
  num_turns_final_mod,
  verbose) = get_defaults()
 
 st.title("Open Strawberry Conversation")
+st.markdown("[Open Strawberry GitHub Repo](https://github.com/pseudotensor/open-strawberry)")
 
 # Initialize session state
 if "openai_model" not in st.session_state:
@@ -29,6 +31,8 @@ if "generator" not in st.session_state:
     st.session_state.generator = None  # Store the generator in session state
 if "prompt" not in st.session_state:
     st.session_state.prompt = None  # Store the prompt in session state
+if "answer" not in st.session_state:
+    st.session_state.answer = None
 if "system_prompt" not in st.session_state:
     st.session_state.system_prompt = None
 if "output_tokens" not in st.session_state:
@@ -39,18 +43,12 @@ if "cache_creation_input_tokens" not in st.session_state:
     st.session_state.cache_creation_input_tokens = 0
 if "cache_read_input_tokens" not in st.session_state:
     st.session_state.cache_read_input_tokens = 0
-# if "num_turns_final_mod" not in st.session_state:
-#    st.session_state.num_turns_final_mod = num_turns_final_mod
-# if "num_turns" not in st.session_state:
-#    st.session_state.num_turns = num_turns
 if "verbose" not in st.session_state:
     st.session_state.verbose = verbose
 if "max_tokens" not in st.session_state:
     st.session_state.max_tokens = max_tokens
 if "temperature" not in st.session_state:
     st.session_state.temperature = temperature
-# if "show_next" not in st.session_state:
-#    st.session_state.show_next = show_next
 if "next_prompts" not in st.session_state:
     st.session_state.next_prompts = next_prompts
 if "final_prompt" not in st.session_state:
@@ -147,6 +145,9 @@ if not st.session_state.conversation_started:
         prompt = st.text_area("What would you like to ask?", value=initial_prompt,
                               key=f"input_{st.session_state.input_key}", height=500)
         st.session_state.prompt = prompt
+        answer = st.text_area("Expected answer (Empty if do not know)", value=expected_answer,
+                              key=f"answer_{st.session_state.input_key}", height=100)
+        st.session_state.answer = answer
         system_prompt = st.text_area("System Prompt", value=system_prompt,
                                      key=f"system_prompt_{st.session_state.input_key}", height=200)
         st.session_state.system_prompt = system_prompt
@@ -185,7 +186,6 @@ try:
                 temperature=st.session_state.temperature,
                 max_tokens=st.session_state.max_tokens,
                 verbose=st.session_state.verbose,
-                yield_prompt=True,
             )
         chunk = next(st.session_state.generator)
         if chunk["role"] == "assistant":
@@ -196,6 +196,17 @@ try:
             # Update the assistant container with the progressively streaming message
             with assistant_placeholder.container():
                 st.chat_message("assistant").markdown(current_assistant_message)  # Update in the same chat message
+                if 'final' in chunk and chunk['final']:
+                    if st.session_state.answer:
+                        if st.session_state.answer.strip() in chunk["content"]:
+                            st.markdown(f'<h3 class="expander-title">🏆 Final Answer</h3>', unsafe_allow_html=True)
+                        else:
+                            st.markdown(f'Expected: **{st.session_state.answer.strip()}**', unsafe_allow_html=True)
+                            st.markdown(f'<h3 class="expander-title">👎 Final Answer</h3>', unsafe_allow_html=True)
+                    else:
+                        st.markdown(f'<h3 class="expander-title">👌 Final Answer</h3>', unsafe_allow_html=True)
+                    #st.markdown(f'<div>{chunk["content"].strip()}</div>', unsafe_allow_html=True)
+                    st.markdown(f'**{chunk["content"].strip()}**', unsafe_allow_html=True)
 
         elif chunk["role"] == "user":
             if current_assistant_message:
