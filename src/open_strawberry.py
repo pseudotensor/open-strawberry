@@ -51,7 +51,7 @@ def manage_conversation(model: str,
     chat_history = []
 
     turn_count = 0
-    total_thinking_time = time.time()
+    total_thinking_time = 0
     while True:
         trying_final = False
         if turn_count == 0:
@@ -74,10 +74,11 @@ def manage_conversation(model: str,
             else:
                 yield {"role": "usage", "content": chunk}
         thinking_time = time.time() - thinking_time
+        total_thinking_time += thinking_time
 
         turn_title = get_turn_title(response_text)
         yield {"role": "assistant", "content": turn_title, "turn_title": True, 'thinking_time': thinking_time,
-               'total_thinking_time': time.time() - total_thinking_time}
+               'total_thinking_time': total_thinking_time}
 
         chat_history.append(
             {"role": "user",
