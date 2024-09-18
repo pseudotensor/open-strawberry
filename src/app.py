@@ -59,26 +59,38 @@ if "final_prompt" not in st.session_state:
 def display_chat():
     for message in st.session_state.messages:
         if message["role"] == "assistant":
-            assistant_container1 = st.chat_message("assistant")
-            with assistant_container1.container():
-                st.markdown(message["content"])
+            if 'final' in message and message['final']:
+                display_final(message)
+            else:
+                assistant_container1 = st.chat_message("assistant")
+                with assistant_container1.container():
+                    st.markdown(message["content"].replace('\n', '  \n'), unsafe_allow_html=True)
         elif message["role"] == "user":
             if not message["initial"] and not st.session_state.show_next:
                 continue
             user_container1 = st.chat_message("user")
             with user_container1:
-                st.markdown(message["content"])
+                st.markdown(message["content"].replace('\n', '  \n'), unsafe_allow_html=True)
 
-    # Add a dummy element at the end to ensure scrolling to the latest message
-    st.markdown("<div id='bottom'></div>", unsafe_allow_html=True)
-    st.markdown("""
-        <script>
-            var bottom = document.getElementById('bottom');
-            if (bottom) {
-                bottom.scrollIntoView({behavior: 'smooth'});
-            }
-        </script>
-    """, unsafe_allow_html=True)
+
+def display_final(chunk1, can_rerun=False):
+    if 'final' in chunk1 and chunk1['final']:
+        if st.session_state.answer:
+            if st.session_state.answer.strip() in chunk1["content"]:
+                st.markdown(f'<h3 class="expander-title">🏆 Final Answer</h3>', unsafe_allow_html=True)
+            else:
+                st.markdown(f'Expected: **{st.session_state.answer.strip()}**', unsafe_allow_html=True)
+                st.markdown(f'<h3 class="expander-title">👎 Final Answer</h3>', unsafe_allow_html=True)
+        else:
+            st.markdown(f'<h3 class="expander-title">👌 Final Answer</h3>', unsafe_allow_html=True)
+        final = chunk1["content"].strip().replace('\n', '  \n')
+        if '\n' in final or '<br>' in final:
+            st.markdown(f'{final}', unsafe_allow_html=True)
+        else:
+            st.markdown(f'**{final}**', unsafe_allow_html=True)
+        if can_rerun:
+            # rerun to get token stats
+            st.rerun()
 
 
 # Sidebar
@@ -87,8 +99,8 @@ st.sidebar.title("Controls")
 # Model selection
 st.sidebar.selectbox("Select Model", get_all_model_names(), key="openai_model")
 st.sidebar.checkbox("Show Next", value=show_next, key="show_next")
-st.sidebar.number_input("Num Turns Final Mod", value=num_turns_final_mod, key="num_turns_final_mod")
-st.sidebar.number_input("Num Turns", value=num_turns, key="num_turns")
+st.sidebar.number_input("Num Turns to Check if Final Answer", value=num_turns_final_mod, key="num_turns_final_mod")
+st.sidebar.number_input("Num Turns per User Click of Continue", value=num_turns, key="num_turns")
 
 
 def save_env_vars(env_vars):
@@ -132,7 +144,8 @@ st.session_state.waiting_for_continue = False
 
 # Display debug information
 st.sidebar.write(f"Turn count: {st.session_state.turn_count}")
-st.sidebar.write(f"Number of messages: {len(st.session_state.messages)}")
+num_messages = len([x for x in st.session_state.messages if x.get('role', '') == 'assistant'])
+st.sidebar.write(f"Number of AI messages: {num_messages}")
 st.sidebar.write(f"Conversation started: {st.session_state.conversation_started}")
 st.sidebar.write(f"Output tokens: {st.session_state.output_tokens}")
 st.sidebar.write(f"Input tokens: {st.session_state.input_tokens}")
@@ -189,28 +202,27 @@ try:
             )
         chunk = next(st.session_state.generator)
         if chunk["role"] == "assistant":
-            current_assistant_message += chunk["content"]
+            current_assistant_message += chunk["content"] if not chunk.get('final', False) else ''
             if assistant_placeholder is None:
                 assistant_placeholder = st.empty()  # Placeholder for assistant's message
 
             # Update the assistant container with the progressively streaming message
             with assistant_placeholder.container():
-                st.chat_message("assistant").markdown(current_assistant_message)  # Update in the same chat message
+                # Update in the same chat message
+                st.chat_message("assistant").markdown(current_assistant_message, unsafe_allow_html=True)
                 if 'final' in chunk and chunk['final']:
-                    if st.session_state.answer:
-                        if st.session_state.answer.strip() in chunk["content"]:
-                            st.markdown(f'<h3 class="expander-title">🏆 Final Answer</h3>', unsafe_allow_html=True)
-                        else:
-                            st.markdown(f'Expected: **{st.session_state.answer.strip()}**', unsafe_allow_html=True)
-                            st.markdown(f'<h3 class="expander-title">👎 Final Answer</h3>', unsafe_allow_html=True)
-                    else:
-                        st.markdown(f'<h3 class="expander-title">👌 Final Answer</h3>', unsafe_allow_html=True)
-                    #st.markdown(f'<div>{chunk["content"].strip()}</div>', unsafe_allow_html=True)
-                    st.markdown(f'**{chunk["content"].strip()}**', unsafe_allow_html=True)
+                    # user role would normally do this, but on final step needs to be here
+                    st.session_state.messages.append(
+                        {"role": "assistant", "content": current_assistant_message, 'final': False})
+                    # last message, so won't reach user turn, so need to store final assistant message from parsing
+                    st.session_state.messages.append(
+                        {"role": "assistant", "content": chunk['content'], 'final': True})
+                    display_final(chunk, can_rerun=True)
 
         elif chunk["role"] == "user":
             if current_assistant_message:
-                st.session_state.messages.append({"role": "assistant", "content": current_assistant_message})
+                st.session_state.messages.append(
+                    {"role": "assistant", "content": current_assistant_message, 'final': chunk.get('final', False)})
             # Reset assistant message when user provides input
             # Display user message
             if not chunk["initial"] and not st.session_state.show_next:
@@ -218,7 +230,7 @@ try:
             else:
                 user_container = st.chat_message("user")
                 with user_container:
-                    st.markdown(chunk["content"])
+                    st.markdown(chunk["content"].replace('\n', '  \n'), unsafe_allow_html=True)
             st.session_state.messages.append({"role": "user", "content": chunk["content"], 'initial': chunk["initial"]})
 
             st.session_state.turn_count += 1

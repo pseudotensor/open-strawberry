@@ -79,11 +79,18 @@ def manage_conversation(model: str,
             tag = 'final_answer'
             pattern = fr'<{tag}>(.*?)</{tag}>'
             values = re.findall(pattern, response_text, re.DOTALL)
+            values0 = values.copy()
+            have_values = len(values) > 0
+            values = [v.strip() for v in values]
+            values = [v for v in values if v]
+            if len(values) == 0:
+                # then removed too much
+                values = values0
             if values:
                 if cli_mode:
-                    response_text = '\n\nFINAL ANSWER:\n\n' + values[0] + '\n\n'
+                    response_text = '\n\nFINAL ANSWER:\n\n' + values[-1] + '\n\n'
                 else:
-                    response_text = values[0]
+                    response_text = values[-1]
                 chat_history.append({"role": "assistant", "content": response_text})
                 yield {"role": "assistant", "content": response_text, "streaming": True, "chat_history": chat_history,
                        "final": True}
