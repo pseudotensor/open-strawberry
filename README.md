@@ -88,7 +88,8 @@ This project aims to recreate a similar system using open-source tools and metho
 
 - **Q***: A hypothetical primordial search-generation algorithm developed by OpenAI to generate training data.
 - **Strawberry**: An advanced search-generation algorithm by OpenAI for generating and verifying training data.
-- **Orion**: A class of models fine-tuned on Strawberry data, including o1-mini, o1-preview, o1, o1-ioi, etc. [1]
+- **o1**: GPT-4o and GPT-4o-mini based but fine-tuned on Strawberry data, including o1-mini, o1-preview, o1, and o1-ioi. [1]
+- **Orion**: GPT-5-based model that incorporates Strawberry's synthetic data and manages 0-shot vs. long reasoning queries better.
 
 ## Proposed Methodology
 
