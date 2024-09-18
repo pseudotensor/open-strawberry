@@ -445,4 +445,4 @@ def get_model_api(model: str):
     elif model in azure_models:
         return get_openai_azure
     else:
-        raise ValueError(f"Unsupported model: {model}")
+        raise ValueError(f"Unsupported model: {model}.  Ensure to add prefix (e.g. openai:, google:, groq:, azure:, ollama:, anthropic:)")

@@ -1,12 +1,10 @@
 # open-strawberry
 
-A proof-of-concept in development for open-source implementation inspired by OpenAI's Strawberry algorithm.
+A proof-of-concept to construct of reasoning traces to build an open-source version of OpenAI o1 as inspired by OpenAI's Strawberry algorithm.
 
 If you want to support the project, turn ★ into ⭐ (top-right corner) and share it with your friends.
 
-With enough support, my employer might pay for compute to generate data and fine-tune models.
-
-Contributions very welcome!  See my other projects like [h2oGPT](https://github.com/h2oai/h2ogpt) and [prompt-engineering](https://github.com/pseudotensor/prompt-engineering).
+Contributions very welcome!
 
 ## Installation
 
@@ -81,7 +79,7 @@ The project is in its initial stages to explore generation of reasoning traces f
 
 Note that the demo prompt is simple models and even sonnet3.5 and gpt-4o cannot find a solution even with standard CoT.  Only o1-mini or o1-preview can sometimes get, although [code agents](https://x.com/ArnoCandel/status/1834306725706694916) and easily solve it.
 
-![img_1.png](img_1.png)
+![img.png](img.png)
 
 ## Background
 
@@ -168,6 +166,7 @@ Jonathan McKinney is the Director of Research at H2O.ai with a background in ast
 - Former Astrophysics Professor at UMD [B1][B2][B3][B4]
 - 7 years of experience with AutoML products at H2O.ai [B5][B6]
 - Recent work on fine-tuning LLMs, RAG, and AI Agents (h2oGPT) [B7][B8]
+- See my other projects like [h2oGPT](https://github.com/h2oai/h2ogpt) and [prompt-engineering](https://github.com/pseudotensor/prompt-engineering)
 
 ## Disclaimer
 

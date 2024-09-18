@@ -9,14 +9,15 @@ from src.models import get_all_model_names
  next_prompts, num_turns, show_next, final_prompt,
  temperature, max_tokens,
  num_turns_final_mod,
+ show_cot,
  verbose) = get_defaults()
 
 st.title("Open Strawberry Conversation")
 st.markdown("[Open Strawberry GitHub Repo](https://github.com/pseudotensor/open-strawberry)")
 
 # Initialize session state
-if "openai_model" not in st.session_state:
-    st.session_state["openai_model"] = "anthropic:claude-3-haiku-20240307"
+if "model_name" not in st.session_state:
+    st.session_state["model_name"] = "anthropic:claude-3-haiku-20240307"
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "turn_count" not in st.session_state:
@@ -57,14 +58,19 @@ if "final_prompt" not in st.session_state:
 
 # Function to display chat messages
 def display_chat():
+    display_step = 1
     for message in st.session_state.messages:
         if message["role"] == "assistant":
             if 'final' in message and message['final']:
                 display_final(message)
+            elif 'turn_title' in message and message['turn_title']:
+                display_turn_title(message, display_step=display_step)
+                display_step += 1
             else:
-                assistant_container1 = st.chat_message("assistant")
-                with assistant_container1.container():
-                    st.markdown(message["content"].replace('\n', '  \n'), unsafe_allow_html=True)
+                with st.expander("Chain of Thoughts", expanded=st.session_state["show_cot"]):
+                    assistant_container1 = st.chat_message("assistant")
+                    with assistant_container1.container():
+                        st.markdown(message["content"].replace('\n', '  \n'), unsafe_allow_html=True)
         elif message["role"] == "user":
             if not message["initial"] and not st.session_state.show_next:
                 continue
@@ -93,14 +99,35 @@ def display_final(chunk1, can_rerun=False):
             st.rerun()
 
 
+def display_turn_title(chunk1, display_step=None):
+    if display_step is None:
+        display_step = st.session_state.turn_count
+        name = "Completed Step"
+    else:
+        name = "Step"
+    if 'turn_title' in chunk1 and chunk1['turn_title']:
+        turn_title = chunk1["content"].strip().replace('\n', '  \n')
+        step_time = f' in time {str(int(chunk1["thinking_time"]))}s'
+        acum_time = f' in total {str(int(chunk1["total_thinking_time"]))}s'
+        st.markdown(f'**{name} {display_step}: {turn_title}{step_time}{acum_time}**', unsafe_allow_html=True)
+
+
+if st.button("Start Conversation", disabled=st.session_state.conversation_started):
+    st.session_state.conversation_started = True
+
 # Sidebar
 st.sidebar.title("Controls")
 
 # Model selection
-st.sidebar.selectbox("Select Model", get_all_model_names(), key="openai_model")
-st.sidebar.checkbox("Show Next", value=show_next, key="show_next")
-st.sidebar.number_input("Num Turns to Check if Final Answer", value=num_turns_final_mod, key="num_turns_final_mod")
-st.sidebar.number_input("Num Turns per User Click of Continue", value=num_turns, key="num_turns")
+st.sidebar.selectbox("Select Model", get_all_model_names(), key="model_name",
+                     disabled=st.session_state.conversation_started)
+st.sidebar.checkbox("Show Next", value=show_next, key="show_next", disabled=st.session_state.conversation_started)
+st.sidebar.number_input("Num Turns to Check if Final Answer", value=num_turns_final_mod, key="num_turns_final_mod",
+                        disabled=st.session_state.conversation_started)
+st.sidebar.number_input("Num Turns per User Click of Continue", value=num_turns, key="num_turns",
+                        disabled=st.session_state.conversation_started)
+st.sidebar.checkbox("Show Chain of Thoughts Details", value=show_cot, key="show_cot",
+                    disabled=st.session_state.conversation_started)
 
 
 def save_env_vars(env_vars):
@@ -121,7 +148,7 @@ with st.sidebar.expander("Edit dotenv"):
     dotenv_dict = get_dotenv_values()
     new_env = {}
     for k, v in dotenv_dict.items():
-        new_env[k] = st.text_input(k, value=v, key=k)
+        new_env[k] = st.text_input(k, value=v, key=k, disabled=st.session_state.conversation_started)
     if st.button("Save dotenv"):
         save_env_vars(new_env)
         st.success("dotenv saved")
@@ -154,21 +181,18 @@ st.sidebar.write(f"Cache read input tokens: {st.session_state.cache_read_input_t
 
 # Handle user input
 if not st.session_state.conversation_started:
-    if not st.button("Start Conversation"):
-        prompt = st.text_area("What would you like to ask?", value=initial_prompt,
-                              key=f"input_{st.session_state.input_key}", height=500)
-        st.session_state.prompt = prompt
-        answer = st.text_area("Expected answer (Empty if do not know)", value=expected_answer,
-                              key=f"answer_{st.session_state.input_key}", height=100)
-        st.session_state.answer = answer
-        system_prompt = st.text_area("System Prompt", value=system_prompt,
-                                     key=f"system_prompt_{st.session_state.input_key}", height=200)
-        st.session_state.system_prompt = system_prompt
-    else:
-        st.session_state.conversation_started = True
-        st.session_state.input_key += 1
+    prompt = st.text_area("What would you like to ask?", value=initial_prompt,
+                          key=f"input_{st.session_state.input_key}", height=500)
+    st.session_state.prompt = prompt
+    answer = st.text_area("Expected answer (Empty if do not know)", value=expected_answer,
+                          key=f"answer_{st.session_state.input_key}", height=100)
+    st.session_state.answer = answer
+    system_prompt = st.text_area("System Prompt", value=system_prompt,
+                                 key=f"system_prompt_{st.session_state.input_key}", height=200)
+    st.session_state.system_prompt = system_prompt
 else:
-    assert st.session_state.generator is not None
+    st.session_state.conversation_started = True
+    st.session_state.input_key += 1
 
 # Display chat history
 chat_container = st.container()
@@ -189,7 +213,7 @@ try:
             continue
         elif st.session_state.generator is None:
             st.session_state.generator = manage_conversation(
-                model=st.session_state["openai_model"],
+                model=st.session_state["model_name"],
                 system=st.session_state.system_prompt,
                 initial_prompt=st.session_state.prompt,
                 next_prompts=st.session_state.next_prompts,
@@ -202,14 +226,22 @@ try:
             )
         chunk = next(st.session_state.generator)
         if chunk["role"] == "assistant":
-            current_assistant_message += chunk["content"] if not chunk.get('final', False) else ''
+            if not chunk.get('final', False) and not chunk.get('turn_title', False):
+                current_assistant_message += chunk["content"]
             if assistant_placeholder is None:
                 assistant_placeholder = st.empty()  # Placeholder for assistant's message
 
             # Update the assistant container with the progressively streaming message
             with assistant_placeholder.container():
                 # Update in the same chat message
-                st.chat_message("assistant").markdown(current_assistant_message, unsafe_allow_html=True)
+                with st.expander("Chain of Thoughts", expanded=st.session_state["show_cot"]):
+                    st.chat_message("assistant").markdown(current_assistant_message, unsafe_allow_html=True)
+                if 'turn_title' in chunk and chunk['turn_title']:
+                    st.session_state.messages.append(
+                        {"role": "assistant", "content": chunk['content'], 'turn_title': True,
+                         'thinking_time': chunk['thinking_time'],
+                         'total_thinking_time': chunk['total_thinking_time']})
+                    display_turn_title(chunk)
                 if 'final' in chunk and chunk['final']:
                     # user role would normally do this, but on final step needs to be here
                     st.session_state.messages.append(

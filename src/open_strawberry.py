@@ -9,7 +9,7 @@ from src.models import get_model_api
 
 
 def parse_arguments(model, system_prompt, next_prompts, num_turns, show_next, final_prompt,
-                    num_turns_final_mod, verbose):
+                    num_turns_final_mod, show_cot, verbose):
     parser = argparse.ArgumentParser(description="Open Strawberry Conversation Manager")
     parser.add_argument("--show_next", action="store_true", default=show_next, help="Show all messages")
     parser.add_argument("--verbose", action="store_true", default=verbose, help="Show usage information")
@@ -26,6 +26,8 @@ def parse_arguments(model, system_prompt, next_prompts, num_turns, show_next, fi
     parser.add_argument("--temperature", type=float, default=0.3, help="Temperature for the model")
     parser.add_argument("--max_tokens", type=int, default=1024, help="Maximum tokens for the model")
     parser.add_argument("--seed", type=int, default=0, help="Random seed, 0 means random seed")
+    parser.add_argument("--show_cot", type=bool, default=show_cot, help="Whether to show detailed Chain of Thoughts")
+
     return parser.parse_args()
 
 
@@ -49,6 +51,7 @@ def manage_conversation(model: str,
     chat_history = []
 
     turn_count = 0
+    total_thinking_time = time.time()
     while True:
         trying_final = False
         if turn_count == 0:
@@ -60,15 +63,21 @@ def manage_conversation(model: str,
             prompt = random.choice(next_prompts)
         yield {"role": "user", "content": prompt, "chat_history": chat_history, "initial": turn_count == 0}
 
+        thinking_time = time.time()
         response_text = ''
         for chunk in get_model_func(model, prompt, system=system, chat_history=chat_history,
                                     temperature=temperature, max_tokens=max_tokens, verbose=verbose):
             if 'text' in chunk and chunk['text']:
                 response_text += chunk['text']
                 yield {"role": "assistant", "content": chunk['text'], "streaming": True, "chat_history": chat_history,
-                       "final": False}
+                       "final": False, "turn_title": False}
             else:
                 yield {"role": "usage", "content": chunk}
+        thinking_time = time.time() - thinking_time
+
+        turn_title = get_turn_title(response_text)
+        yield {"role": "assistant", "content": turn_title, "turn_title": True, 'thinking_time': thinking_time,
+               'total_thinking_time': time.time() - total_thinking_time}
 
         chat_history.append(
             {"role": "user",
@@ -100,12 +109,29 @@ def manage_conversation(model: str,
 
         if turn_count % num_turns == 0:
             if cli_mode:
-                user_continue = input("Continue? (y/n): ").lower() == 'y'
+                user_continue = input("\nContinue? (y/n): ").lower() == 'y'
                 if not user_continue:
                     break
             else:
                 yield {"role": "action", "content": "continue?", "chat_history": chat_history}
         time.sleep(0.001)
+
+
+def get_turn_title(response_text):
+    tag = 'turn_title'
+    pattern = fr'<{tag}>(.*?)</{tag}>'
+    values = re.findall(pattern, response_text, re.DOTALL)
+    values0 = values.copy()
+    values = [v.strip() for v in values]
+    values = [v for v in values if v]
+    if len(values) == 0:
+        # then maybe removed too much
+        values = values0
+    if values:
+        turn_title = values[-1]
+    else:
+        turn_title = response_text[:15] + '...'
+    return turn_title
 
 
 def get_defaults():
@@ -118,6 +144,7 @@ def get_defaults():
     * You win the game is you are able to take the smallest text steps possible while still (on average) heading towards the solution.
     * Backtracking is allowed, and generating python code is allowed (but will not be executed, but can be used to think), just on average over many text output turns you must head towards the answer.
     * You must think using first principles, and ensure you identify inconsistencies, errors, etc.
+    * You MUST always end with a very brief natural language title (it should just describe the analysis, do not give step numbers) of what you did inside <turn_title> </turn_title> XML tags.  Only a single title is allowed.
     </thinking_game>
     Are you ready to win the game?"""
 
@@ -167,10 +194,11 @@ def get_defaults():
     num_turns_final_mod = NUM_TURNS - 1  # not required, just ok value.  Could be randomized.
 
     show_next = False
+    show_cot = False
     verbose = False
 
     # model = "claude-3-5-sonnet-20240620"
-    model = "claude-3-haiku-20240307"
+    model = "anthropic:claude-3-haiku-20240307"
 
     temperature = 0.3
     max_tokens = 1024
@@ -181,15 +209,18 @@ def get_defaults():
             next_prompts,
             NUM_TURNS, show_next, final_prompt,
             temperature, max_tokens,
-            num_turns_final_mod, verbose)
+            num_turns_final_mod,
+            show_cot,
+            verbose)
 
 
 def go():
     (model, system_prompt, initial_prompt, expected_answer,
      next_prompts, num_turns, show_next, final_prompt,
-     temperature, max_tokens, num_turns_final_mod, verbose) = get_defaults()
+     temperature, max_tokens, num_turns_final_mod,
+     show_cot, verbose) = get_defaults()
     args = parse_arguments(model, system_prompt, next_prompts, num_turns, show_next, final_prompt,
-                           num_turns_final_mod, verbose)
+                           num_turns_final_mod, show_cot, verbose)
 
     if args.initial_prompt == '':
         initial_prompt_query = input("Enter the initial prompt (hitting enter will use default initial_prompt)\n\n")
@@ -215,15 +246,34 @@ def go():
     conversation_history = []
 
     try:
+        step = 1
         while True:
             chunk = next(generator)
             if 'role' in chunk and chunk['role'] == 'assistant':
                 response += chunk['content']
-                conversation_history = chunk['chat_history']
-                print(chunk['content'], end='')
+
+                if 'turn_title' in chunk and chunk['turn_title']:
+                    step_time = f' in time {str(int(chunk["thinking_time"]))}s'
+                    acum_time = f' in total {str(int(chunk["total_thinking_time"]))}s'
+                    extra = '\n\n' if show_cot else ''
+                    extra2 = '**' if show_cot else ''
+                    extra3 = ' ' if show_cot else ''
+                    print(
+                        f'{extra}{extra2}{extra3}Completed Step {step}: {chunk["content"]}{step_time}{acum_time}{extra3}{extra2}{extra}')
+                    step += 1
+                elif 'final' in chunk and chunk['final']:
+                    if '\n' in chunk['content'] or '\r' in chunk['content']:
+                        print(f'\n\nFinal Answer:\n\n {chunk["content"]}')
+                    else:
+                        print('\n\nFinal Answer:\n\n**', chunk['content'], '**\n\n')
+                elif show_cot:
+                    print(chunk['content'], end='')
+                if 'chat_history' in chunk:
+                    conversation_history = chunk['chat_history']
             elif 'role' in chunk and chunk['role'] == 'user':
                 if not chunk['initial'] and not show_next:
-                    print('\n\n')
+                    if show_cot:
+                        print('\n\n')
                     continue
                 print('\n', end='')  # finish assistant
                 print('\nUser: ', chunk['content'], end='\n\n')
@@ -232,10 +282,16 @@ def go():
     except StopIteration as e:
         pass
 
-    print("Conversation history:", conversation_history)
+    if verbose:
+        print("Conversation history:", conversation_history)
 
     if expected_answer and expected_answer in conversation_history[-1]['content']:
         print("\n\nGot Expected answer!")
+
+    if not show_cot:
+        print("**FULL RESPONSE:**\n\n")
+        print(response)
+    return response
 
 
 if __name__ == '__main__':
