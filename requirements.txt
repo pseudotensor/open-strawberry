@@ -9,3 +9,5 @@ streamlit
 blinker
 click
 pydantic
+
+tenacity

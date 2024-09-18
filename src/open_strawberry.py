@@ -137,9 +137,9 @@ def get_defaults():
     6 5 0 7 (nothing is correct)
     8 5 2 4 (two numbers are correct but in the wrong positions)"""
 
-    next_prompts = ["next",
-                    "next",
-                    "next",
+    next_prompts = ["continue effort to answering user's original query",
+                    "continue effort to answering user's original query",
+                    "continue effort to answering user's original query",
                     "Are you sure?",
                     "How would you verify your answer?",
                     "Any mistakes?",

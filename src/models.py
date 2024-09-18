@@ -4,8 +4,19 @@ import os
 from typing import List, Dict, Generator
 from dotenv import load_dotenv
 
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_random_exponential,
+)  # for exponential backoff
+
 # Load environment variables from .env file
 load_dotenv()
+
+
+@retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(3))
+def anthropic_completion_with_backoff(client, *args, **kwargs):
+    return client.beta.prompt_caching.messages.create(*args, **kwargs)
 
 
 def get_anthropic(model: str,
@@ -54,14 +65,14 @@ def get_anthropic(model: str,
         ]
     })
 
-    response = clawd_client.beta.prompt_caching.messages.create(
-        model=model,
-        max_tokens=max_tokens,
-        temperature=temperature,
-        system=system,
-        messages=messages,
-        stream=True
-    )
+    response = anthropic_completion_with_backoff(clawd_client,
+                                                 model=model,
+                                                 max_tokens=max_tokens,
+                                                 temperature=temperature,
+                                                 system=system,
+                                                 messages=messages,
+                                                 stream=True
+                                                 )
 
     output_tokens = 0
     input_tokens = 0
@@ -96,6 +107,11 @@ def get_anthropic(model: str,
                cache_read_input_tokens=cache_read_input_tokens)
 
 
+@retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(3))
+def openai_completion_with_backoff(client, *args, **kwargs):
+    return client.chat.completions.create(*args, **kwargs)
+
+
 def get_openai(model: str,
                prompt: str,
                temperature: float = 0,
@@ -127,13 +143,13 @@ def get_openai(model: str,
 
     messages = [{"role": "system", "content": system}] + chat_history + [{"role": "user", "content": prompt}]
 
-    response = openai_client.chat.completions.create(
-        model=model,
-        messages=messages,
-        temperature=temperature,
-        max_tokens=max_tokens,
-        stream=True,
-    )
+    response = openai_completion_with_backoff(openai_client,
+                                              model=model,
+                                              messages=messages,
+                                              temperature=temperature,
+                                              max_tokens=max_tokens,
+                                              stream=True,
+                                              )
 
     output_tokens = 0
     input_tokens = 0
@@ -172,6 +188,16 @@ def openai_messages_to_gemini_history(messages):
         #     history.append({"role": "system", "parts": [{"text": message["content"]}]})
 
     return history
+
+
+@retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(3))
+def gemini_send_message_with_backoff(chat, prompt, stream=True):
+    return chat.send_message(prompt, stream=stream)
+
+
+@retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(3))
+def gemini_generate_content_with_backoff(model, prompt, stream=True):
+    return model.generate_content(prompt, stream=stream)
 
 
 def get_google(model: str,
@@ -239,10 +265,10 @@ def get_google(model: str,
                                              safety_settings=safety_settings)
 
     if cache:
-        response = gemini_model.generate_content(prompt, stream=True)
+        response = gemini_generate_content_with_backoff(gemini_model, prompt, stream=True)
     else:
         chat = gemini_model.start_chat(history=chat_history)
-        response = chat.send_message(prompt, stream=True)
+        response = gemini_send_message_with_backoff(chat, prompt, stream=True)
 
     output_tokens = 0
     input_tokens = 0
@@ -297,13 +323,13 @@ def get_groq(model: str,
 
     messages = [{"role": "system", "content": system}] + chat_history + [{"role": "user", "content": prompt}]
 
-    stream = client.chat.completions.create(
-        messages=messages,
-        model=model,
-        temperature=temperature,
-        max_tokens=max_tokens,
-        stream=True,
-    )
+    stream = openai_completion_with_backoff(client,
+                                            messages=messages,
+                                            model=model,
+                                            temperature=temperature,
+                                            max_tokens=max_tokens,
+                                            stream=True,
+                                            )
 
     output_tokens = 0
     input_tokens = 0
@@ -351,13 +377,13 @@ def get_openai_azure(model: str,
 
     messages = [{"role": "system", "content": system}] + chat_history + [{"role": "user", "content": prompt}]
 
-    response = client.chat.completions.create(
-        model=model,
-        messages=messages,
-        temperature=temperature,
-        max_tokens=max_tokens,
-        stream=True
-    )
+    response = openai_completion_with_backoff(client,
+                                              model=model,
+                                              messages=messages,
+                                              temperature=temperature,
+                                              max_tokens=max_tokens,
+                                              stream=True
+                                              )
 
     output_tokens = 0
     input_tokens = 0
