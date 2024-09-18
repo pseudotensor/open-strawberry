@@ -421,7 +421,7 @@ def get_model_names():
             ollama_model_list = [ollama_model]
     else:
         ollama_model_list = []
-    ollama = ['ollama:' + x for x in ollama_model_list]
+    ollama = ['ollama:' + x if 'ollama:' not in x else x for x in ollama_model_list]
 
     return anthropic_models, openai_models, google_models, groq_models, azure_models, ollama
 
