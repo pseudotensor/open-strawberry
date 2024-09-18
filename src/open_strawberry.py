@@ -147,16 +147,27 @@ def get_defaults():
                     "Take a deep breath and work on this problem step-by-step.",
                     "Break this down.",
                     "Please ensure you think from first principles.",
-                    """List a much more general abstract versions of the original question, then describe the situation using your imagination ensuring not to over-constrain the problem, then explore in a list all the possible different constraints or lack of constraints (be sure to consider from a human viewpoint) relevant for the circumstance, then explore in a list the many extreme possibilities for issues. Let's work this out in a well-structured step-by-step thoughtful way to be sure we have the right answer. Make a final best guess using common sense.""",
-                    """1) Restate the original question in elaborate form.
-    2) Give an abstract version of the original question.
-    3) Provide a detailed highly-accurate and well-structured response to the user's original question.
-    4) Give a detailed highly-accurate and well-structured justification for the response.
-    5) Evaluate your response with a score of 0 through 10.  10 means the justification perfectly explains the response to the original question and the response is perfectly accurate, 5 means the response and justification might contain some errors, 0 means the response is not accurate or is not well-justified.
-    """
+                    """Follow these steps:
+1) List a much more general abstract versions of the original question, then describe the situation using your imagination ensuring not to over-constrain the problem.
+2) Explore in a list all the possible different constraints or lack of constraints (be sure to consider from a human viewpoint) relevant for the circumstance, then explore in a list the many extreme possibilities for issues.
+3) Let's work this out in a well-structured step-by-step thoughtful way to be sure we have the right answer.
+4) Make a final best guess using common sense.
+""",
+                    """Follow these steps:
+1) Restate the original question in elaborate form.
+2) Give an abstract version of the original question.
+3) Provide a detailed highly-accurate and well-structured response to the user's original question.
+4) Give a detailed highly-accurate and well-structured justification for the response.
+5) Evaluate your response with a score of 0 through 10.  10 means the justification perfectly explains the response to the original question and the response is perfectly accurate, 5 means the response and justification might contain some errors, 0 means the response is not accurate or is not well-justified.
+"""
                     ]
 
-    final_prompt = "Do you have very high confidence in a final answer?  If so, then put the final answer in <final_answer> </final_answer> XML tags.  If not, please continue to work on the problem."
+    final_prompt = """Verification check list:
+1) Do you have very high confidence in a final answer?
+2) Have you fully verified your answer with all the time and resources you have?
+3) If you have very high confidence AND you have fully verified your answer with all resources possible, then put the final answer in <final_answer> </final_answer> XML tags, otherwise please continue to vigorously work on the user's original query.
+"""
+
     NUM_TURNS = int(os.getenv('NUM_TURNS', '10'))  # Number of turns before pausing for continuation
     num_turns_final_mod = NUM_TURNS - 1  # not required, just ok value.  Could be randomized.
 
