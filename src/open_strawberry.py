@@ -2,6 +2,7 @@ import argparse
 import os
 import random
 import re
+import time
 from typing import List, Dict, Generator
 
 from src.models import get_model_api
@@ -80,11 +81,10 @@ def manage_conversation(model: str,
             pattern = fr'<{tag}>(.*?)</{tag}>'
             values = re.findall(pattern, response_text, re.DOTALL)
             values0 = values.copy()
-            have_values = len(values) > 0
             values = [v.strip() for v in values]
             values = [v for v in values if v]
             if len(values) == 0:
-                # then removed too much
+                # then maybe removed too much
                 values = values0
             if values:
                 if cli_mode:
@@ -105,6 +105,7 @@ def manage_conversation(model: str,
                     break
             else:
                 yield {"role": "action", "content": "continue?", "chat_history": chat_history}
+        time.sleep(0.001)
 
 
 def get_defaults():
@@ -227,6 +228,7 @@ def go():
                 print('\n', end='')  # finish assistant
                 print('\nUser: ', chunk['content'], end='\n\n')
                 print('\nAssistant:\n\n ')
+            time.sleep(0.001)
     except StopIteration as e:
         pass
 

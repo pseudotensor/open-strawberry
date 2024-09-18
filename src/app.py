@@ -260,7 +260,7 @@ try:
             st.session_state.cache_read_input_tokens += chunk["content"][
                 "cache_read_input_tokens"] if "cache_read_input_tokens" in chunk["content"] else 0
 
-        time.sleep(0.005)  # Small delay to prevent excessive updates
+        time.sleep(0.001)  # Small delay to prevent excessive updates
 
 except StopIteration:
     pass
