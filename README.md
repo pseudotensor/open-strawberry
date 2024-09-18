@@ -56,7 +56,12 @@ sudo systemctl stop ollama.service
 CUDA_VISIBLE_DEVICES=0 OLLAMA_HOST=0.0.0.0:11434 ollama serve &> ollama.log &
 ollama run mistral:v0.3
 ```
-then choose set `.env` with `OLLAMA_OPENAI_BASE_URL=http://localhost:11434/v1/` and e.g. `OLLAMA_OPENAI_MODEL_NAME=ollama:mistral:v0.3` or list of ollama models: `OLLAMA_OPENAI_MODEL_NAME="[ollama:mistral:v0.3"]`.
+then choose set `.env` with `OLLAMA_OPENAI_BASE_URL=http://localhost:11434/v1/` and e.g. `OLLAMA_OPENAI_MODEL_NAME=ollama:mistral:v0.3` or list of ollama models: `OLLAMA_OPENAI_MODEL_NAME="[ollama:mistral:v0.3"]`,
+then run for CLI:
+```bash
+python src/open_strawberry.py --model ollama:mistral:v0.3
+```
+or pick the model in the UI.
 
 Using UI:
 ```bash
