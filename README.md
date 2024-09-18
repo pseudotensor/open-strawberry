@@ -198,3 +198,6 @@ Related Projects:
 * https://github.com/bklieger-groq/g1
 * https://github.com/ranfysvalle02/llm-reasoning-illusion
 * https://github.com/hijkzzz/Awesome-LLM-Strawberry
+
+Related Videos:
+* https://www.youtube.com/watch?v=tpun1uOKecc (Cascading prompts with repeated CoT)
