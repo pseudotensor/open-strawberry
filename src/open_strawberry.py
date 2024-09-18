@@ -8,41 +8,78 @@ from src.models import get_model_api
 from src.utils import get_turn_title, get_final_answer
 
 
+class DeductionTracker:
+    def __init__(self):
+        self.deductions = []
+        self.certainty_scores = []
+
+    def add_deduction(self, deduction: str, certainty: float):
+        self.deductions.append(deduction)
+        self.certainty_scores.append(certainty)
+
+    def get_deductions(self):
+        return list(zip(self.deductions, self.certainty_scores))
+
+    def update_certainty(self, index: int, new_certainty: float):
+        if 0 <= index < len(self.certainty_scores):
+            self.certainty_scores[index] = new_certainty
+
+
 def get_last_assistant_responses(chat_history, n=3):
     assistant_messages = [msg['content'] for msg in chat_history if msg['role'] == 'assistant']
     return assistant_messages[-n:]
 
 
 def generate_dynamic_system_prompt(base_prompt, turn_count: int, problem_complexity: float) -> str:
+    dynamic_prompt = base_prompt + "\n\n* Always maintain a list of your current deductions and their certainty scores."
+
     if turn_count > 20:
-        base_prompt += "\n* At this stage, focus on synthesizing your previous thoughts and looking for breakthrough insights."
+        dynamic_prompt += "\n* At this stage, focus on synthesizing your previous thoughts and looking for breakthrough insights."
 
     if problem_complexity > 0.7:
-        base_prompt += "\n* This is a highly complex problem. Consider breaking it down into smaller subproblems and solving them incrementally."
+        dynamic_prompt += "\n* This is a highly complex problem. Consider breaking it down into smaller subproblems and solving them incrementally."
 
-    return base_prompt
+    dynamic_prompt += "\n* Regularly verify that your current understanding satisfies ALL given clues."
+    dynamic_prompt += "\n* If you reach a contradiction, backtrack to the last point where you were certain and explore alternative paths."
+
+    return dynamic_prompt
 
 
-def generate_verification_prompt(chat_history: List[Dict], turn_count: int) -> str:
+def generate_verification_prompt(chat_history: List[Dict], turn_count: int, deduction_tracker: DeductionTracker) -> str:
     last_responses = get_last_assistant_responses(chat_history, n=5)
-    verification_prompt = f"""Turn {turn_count}: Verification and Critique
+    current_deductions = deduction_tracker.get_deductions()
+
+    verification_prompt = f"""Turn {turn_count}: Comprehensive Verification and Critique
 1. Review your previous reasoning steps:
 {' '.join(last_responses)}
 
-2. Perform the following checks:
+2. Current deductions and certainty scores:
+{current_deductions}
+
+3. Perform the following checks:
    a) Identify any logical fallacies or unjustified assumptions
    b) Check for mathematical or factual errors
    c) Assess the relevance of each step to the main problem
    d) Evaluate the coherence and consistency of your reasoning
+   e) Verify that your current understanding satisfies ALL given clues
+   f) Check if any of your deductions contradict each other
 
-3. If you find any issues, explain and correct them. If not, suggest a new approach or perspective to consider.
+4. If you find any issues:
+   a) Explain the issue in detail
+   b) Correct the error or resolve the contradiction
+   c) Update the certainty scores of affected deductions
 
-4. Assign a confidence score (0-100) to your current reasoning path and explain why.
+5. If no issues are found, suggest a new approach or perspective to consider.
+
+6. Assign an overall confidence score (0-100) to your current reasoning path and explain why.
 
 Respond in this format:
 <verification>
 [Your detailed verification and critique]
 </verification>
+<updates>
+[Any updates to deductions or certainty scores]
+</updates>
 <confidence_score>[0-100]</confidence_score>
 <explanation>[Explanation for the confidence score]</explanation>
 """
@@ -172,6 +209,7 @@ class Memory:
     def __init__(self, max_size=10):
         self.insights = deque(maxlen=max_size)
         self.mistakes = deque(maxlen=max_size)
+        self.dead_ends = deque(maxlen=max_size)
 
     def add_insight(self, insight: str):
         self.insights.append(insight)
@@ -179,11 +217,17 @@ class Memory:
     def add_mistake(self, mistake: str):
         self.mistakes.append(mistake)
 
+    def add_dead_end(self, dead_end: str):
+        self.dead_ends.append(dead_end)
+
     def get_insights(self) -> List[str]:
         return list(self.insights)
 
     def get_mistakes(self) -> List[str]:
         return list(self.mistakes)
+
+    def get_dead_ends(self) -> List[str]:
+        return list(self.dead_ends)
 
 
 def manage_conversation(model: str,
@@ -205,6 +249,7 @@ def manage_conversation(model: str,
     get_model_func = get_model_api(model)
     chat_history = []
     memory = Memory()
+    deduction_tracker = DeductionTracker()
 
     turn_count = 0
     total_thinking_time = 0
@@ -218,7 +263,7 @@ def manage_conversation(model: str,
         if turn_count == 0:
             prompt = initial_prompt
         elif turn_count % 5 == 0:
-            prompt = generate_verification_prompt(chat_history, turn_count)
+            prompt = generate_verification_prompt(chat_history, turn_count, deduction_tracker)
         elif turn_count % 7 == 0:
             prompt = generate_hypothesis_prompt(chat_history)
         elif turn_count % 11 == 0:
@@ -258,13 +303,22 @@ def manage_conversation(model: str,
         problem_complexity = min(1.0,
                                  problem_complexity + (thinking_time / 60) * 0.1 + (len(response_text) / 1000) * 0.05)
 
-        # Extract insights and mistakes from the response
+        # Extract insights, mistakes, and dead ends from the response
         if "<insight>" in response_text:
             insight = response_text.split("<insight>")[1].split("</insight>")[0]
             memory.add_insight(insight)
         if "<mistake>" in response_text:
             mistake = response_text.split("<mistake>")[1].split("</mistake>")[0]
             memory.add_mistake(mistake)
+        if "<dead_end>" in response_text:
+            dead_end = response_text.split("<dead_end>")[1].split("</dead_end>")[0]
+            memory.add_dead_end(dead_end)
+
+        # Update deduction tracker
+        if "<deduction>" in response_text:
+            deduction = response_text.split("<deduction>")[1].split("</deduction>")[0]
+            certainty = float(response_text.split("<certainty>")[1].split("</certainty>")[0])
+            deduction_tracker.add_deduction(deduction, certainty)
 
         turn_title = get_turn_title(response_text)
         yield {"role": "assistant", "content": turn_title, "turn_title": True, 'thinking_time': thinking_time,
