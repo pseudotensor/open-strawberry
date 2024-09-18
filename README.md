@@ -122,6 +122,11 @@ This project aims to recreate a similar system using open-source tools and metho
 2. Fine-tune a model on the generated reasoning traces.
 3. Evaluate the performance and compare it with existing models.
 
+Other projects:
+* Key difference with [Raspberry](https://github.com/daveshap/Raspberry) is that they are focused on hard prompts, while we think a progressive learning approach with repeated fine-tuning will bootstrap towards o1.
+* Key difference with [g1](https://github.com/bklieger-groq/g1) is that they are focused on o1-like behavior alone, without emphasis how to fine-tune towards o1.
+* Anthropic and Google API support of prompt caching means much cheaper to run.  vLLM supports prefix caching that helps that too.
+
 ## Current Status
 
 This project is in its initial stages. Results and comparisons will be added as they become available.
@@ -131,6 +136,8 @@ TODO:
 - [x] Setup basic streamlit app to easily monitor outputs
 - [x] Look for community support
 - [x] Every (say) 9 steps, ask if model thinks it has final answer, and if so then ask it to place that answer in <final_answer> xml tags for extraction and termination of the reasoning trace.
+- [x] Add backoff
+- [x] Add ollama, google, azure, openai, groq, anthropic APIs with prompt caching for anthropic
 - [ ] Add high-level summary of blocks of text like o1
 - [ ] Improve system prompt, vary it as well or separately from user next prompts
 - [ ] Add verifier that samples window of history and separately critiques the assistant output
