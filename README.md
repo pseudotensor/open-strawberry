@@ -1,6 +1,6 @@
 # open-strawberry
 
-![img_0.png](img_0.png)
+![img_0.png](img_0.jpg)
 
 A proof-of-concept to construct of reasoning traces to build an open-source version of OpenAI o1 as inspired by OpenAI's Strawberry algorithm.
 
