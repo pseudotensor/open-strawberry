@@ -6,6 +6,8 @@ If you want to support the project, turn ★ into ⭐ (top-right corner) and sha
 
 Contributions very welcome!
 
+![img.png](img.png)
+
 ## Installation
 
 Python >=3.10 should be fine, then:
@@ -78,8 +80,6 @@ then choose prompt.
 The project is in its initial stages to explore generation of reasoning traces for specific problems as proof of concept.
 
 Note that the demo prompt is simple models and even sonnet3.5 and gpt-4o cannot find a solution even with standard CoT.  Only o1-mini or o1-preview can sometimes get, although [code agents](https://x.com/ArnoCandel/status/1834306725706694916) and easily solve it.
-
-![img.png](img.png)
 
 ## Background
 
