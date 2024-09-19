@@ -5,7 +5,7 @@ from typing import List, Dict, Generator, Tuple
 from collections import deque
 
 from src.models import get_model_api
-from src.utils import get_turn_title, get_final_answer
+from src.utils import get_turn_title, get_final_answer, get_xml_tag_value
 
 
 class DeductionTracker:
@@ -25,13 +25,26 @@ class DeductionTracker:
             self.certainty_scores[index] = new_certainty
 
 
+class ProblemRepresentation:
+    def __init__(self):
+        self.current_representation = ""
+
+    def update(self, new_representation: str):
+        self.current_representation = new_representation
+
+    def get(self) -> str:
+        return self.current_representation
+
+
 def get_last_assistant_responses(chat_history, n=3):
     assistant_messages = [msg['content'] for msg in chat_history if msg['role'] == 'assistant']
     return assistant_messages[-n:]
 
 
-def generate_dynamic_system_prompt(base_prompt, turn_count: int, problem_complexity: float) -> str:
-    dynamic_prompt = base_prompt + "\n\n* Always maintain a list of your current deductions and their certainty scores."
+def generate_dynamic_system_prompt(base_prompt, turn_count: int, problem_complexity: float, problem_representation: str,
+                                   deductions: List[Tuple[str, float]]) -> str:
+    dynamic_prompt = base_prompt + "\n\n* Always refer to and update the current problem representation as needed."
+    dynamic_prompt += "\n* Maintain and update the list of deductions and their certainty scores."
 
     if turn_count > 20:
         dynamic_prompt += "\n* At this stage, focus on synthesizing your previous thoughts and looking for breakthrough insights."
@@ -42,21 +55,49 @@ def generate_dynamic_system_prompt(base_prompt, turn_count: int, problem_complex
     dynamic_prompt += "\n* Regularly verify that your current understanding satisfies ALL given clues."
     dynamic_prompt += "\n* If you reach a contradiction, backtrack to the last point where you were certain and explore alternative paths."
 
+    dynamic_prompt += f"\n\nCurrent problem representation:\n{problem_representation}"
+    dynamic_prompt += "\n\nYou can update this representation by providing a new one within <representation></representation> tags."
+
+    dynamic_prompt += "\n\nCurrent deductions and certainty scores:"
+    for deduction, certainty in deductions:
+        dynamic_prompt += f"\n- {deduction} (Certainty: {certainty})"
+    dynamic_prompt += "\n\nYou can add new deductions or update existing ones using <deduction></deduction> and <certainty></certainty> tags."
+
     return dynamic_prompt
 
 
-def generate_verification_prompt(chat_history: List[Dict], turn_count: int, deduction_tracker: DeductionTracker) -> str:
+def generate_initial_representation_prompt(initial_prompt: str) -> str:
+    return f"""Based on the following problem description:
+{initial_prompt}
+
+Representation:
+* Create a clear and clean representation that breaks down the problem into parts in order to create a structure that helps track solving the problem.
+* Put the representation inside <representation> </representation> XML tags, ensuring to add new lines before and after XML tags.
+* The representation could be a table, matrix, grid, or any other format that breaks down the problem into its components and ensure it helps iteratively track progress towards the solution.
+* Example representations include a matrix that has values of digits as rows and position of digits as columns and values at each row-column as tracking confirmed position, eliminated position, or possible position.
+* For a table or grid representation, you must put the table or grid inside a Markdown code block (with new lines around the back ticks) and make it nice and easy to read for a human to understand it.
+
+Deductions:
+* Provide your initial deductions (if any) using <deduction></deduction> tags, each followed by a certainty score in <certainty></certainty> tags (0-100).
+"""
+
+
+def generate_verification_prompt(chat_history: List[Dict], turn_count: int, problem_representation: str,
+                                 deductions: List[Tuple[str, float]]) -> str:
     last_responses = get_last_assistant_responses(chat_history, n=5)
-    current_deductions = deduction_tracker.get_deductions()
 
     verification_prompt = f"""Turn {turn_count}: Comprehensive Verification and Critique
+
 1. Review your previous reasoning steps:
 {' '.join(last_responses)}
 
-2. Current deductions and certainty scores:
-{current_deductions}
+2. Current problem representation:
+{problem_representation}
 
-3. Perform the following checks:
+3. Current deductions and certainty scores:
+{deductions}
+
+4. Perform the following checks:
    a) Identify any logical fallacies or unjustified assumptions
    b) Check for mathematical or factual errors
    c) Assess the relevance of each step to the main problem
@@ -64,24 +105,28 @@ def generate_verification_prompt(chat_history: List[Dict], turn_count: int, dedu
    e) Verify that your current understanding satisfies ALL given clues
    f) Check if any of your deductions contradict each other
 
-4. If you find any issues:
+5. If you find any issues:
    a) Explain the issue in detail
    b) Correct the error or resolve the contradiction
-   c) Update the certainty scores of affected deductions
+   c) Update the problem representation if necessary
+   d) Update deductions and certainty scores as needed
 
-5. If no issues are found, suggest a new approach or perspective to consider.
+6. If no issues are found, suggest a new approach or perspective to consider.
 
-6. Assign an overall confidence score (0-100) to your current reasoning path and explain why.
+7. Assign an overall confidence score (0-100) to your current reasoning path and explain why.
 
 Respond in this format:
 <verification>
 [Your detailed verification and critique]
 </verification>
 <updates>
-[Any updates to deductions or certainty scores]
+[Any updates to the problem representation or deductions]
 </updates>
 <confidence_score>[0-100]</confidence_score>
 <explanation>[Explanation for the confidence score]</explanation>
+
+If you need to update the problem representation, provide the new representation within <representation></representation> tags.
+For new or updated deductions, use <deduction></deduction> tags, each followed by <certainty></certainty> tags.
 """
     return verification_prompt
 
@@ -239,7 +284,7 @@ def manage_conversation(model: str,
                         num_turns_final_mod: int = 9,
                         cli_mode: bool = False,
                         temperature: float = 0.3,
-                        max_tokens: int = 1024,
+                        max_tokens: int = 4096,
                         seed: int = 1234,
                         verbose: bool = False
                         ) -> Generator[Dict, None, list]:
@@ -249,6 +294,7 @@ def manage_conversation(model: str,
     get_model_func = get_model_api(model)
     chat_history = []
     memory = Memory()
+    problem_representation = ProblemRepresentation()
     deduction_tracker = DeductionTracker()
 
     turn_count = 0
@@ -257,13 +303,15 @@ def manage_conversation(model: str,
 
     base_system = system
     while True:
-        system = generate_dynamic_system_prompt(base_system, turn_count, problem_complexity)
+        system = generate_dynamic_system_prompt(base_system, turn_count, problem_complexity,
+                                                problem_representation.get(), deduction_tracker.get_deductions())
         trying_final = False
 
         if turn_count == 0:
-            prompt = initial_prompt
+            prompt = generate_initial_representation_prompt(initial_prompt)
         elif turn_count % 5 == 0:
-            prompt = generate_verification_prompt(chat_history, turn_count, deduction_tracker)
+            prompt = generate_verification_prompt(chat_history, turn_count, problem_representation.get(),
+                                                  deduction_tracker.get_deductions())
         elif turn_count % 7 == 0:
             prompt = generate_hypothesis_prompt(chat_history)
         elif turn_count % 11 == 0:
@@ -303,22 +351,22 @@ def manage_conversation(model: str,
         problem_complexity = min(1.0,
                                  problem_complexity + (thinking_time / 60) * 0.1 + (len(response_text) / 1000) * 0.05)
 
-        # Extract insights, mistakes, and dead ends from the response
-        if "<insight>" in response_text:
-            insight = response_text.split("<insight>")[1].split("</insight>")[0]
-            memory.add_insight(insight)
-        if "<mistake>" in response_text:
-            mistake = response_text.split("<mistake>")[1].split("</mistake>")[0]
-            memory.add_mistake(mistake)
-        if "<dead_end>" in response_text:
-            dead_end = response_text.split("<dead_end>")[1].split("</dead_end>")[0]
-            memory.add_dead_end(dead_end)
+        # Extract and update problem representation
+        representations = get_xml_tag_value(response_text, 'representation', ret_all=False)
+        if representations:
+            problem_representation.update(representations[-1])
 
-        # Update deduction tracker
-        if "<deduction>" in response_text:
-            deduction = response_text.split("<deduction>")[1].split("</deduction>")[0]
-            certainty = float(response_text.split("<certainty>")[1].split("</certainty>")[0])
-            deduction_tracker.add_deduction(deduction, certainty)
+        # Extract and update deductions
+        deductions = get_xml_tag_value(response_text, 'deduction')
+        for deduction in deductions:
+            certainties = get_xml_tag_value(response_text, 'certainty', ret_all=False)
+            if certainties:
+                deduction_tracker.add_deduction(deduction, certainties[-1])
+
+        # Extract insights, mistakes, and dead ends from the response
+        [memory.add_insight(x) for x in get_xml_tag_value(response_text, 'insight')]
+        [memory.add_mistake(x) for x in get_xml_tag_value(response_text, 'mistake')]
+        [memory.add_dead_end(x) for x in get_xml_tag_value(response_text, 'dead_end')]
 
         turn_title = get_turn_title(response_text)
         yield {"role": "assistant", "content": turn_title, "turn_title": True, 'thinking_time': thinking_time,
@@ -411,7 +459,7 @@ def get_defaults() -> Tuple:
     model = "anthropic:claude-3-haiku-20240307"
 
     temperature = 0.3
-    max_tokens = 1024
+    max_tokens = 4096
 
     return (model, system_prompt,
             initial_prompt,

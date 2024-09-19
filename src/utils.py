@@ -36,3 +36,22 @@ def get_final_answer(response_text, cli_mode=False):
     else:
         response_text = None
     return response_text
+
+
+def get_xml_tag_value(response_text, tag, ret_all=True):
+    pattern = fr'<{tag}>(.*?)</{tag}>'
+    values = re.findall(pattern, response_text, re.DOTALL)
+    values0 = values.copy()
+    values = [v.strip() for v in values]
+    values = [v for v in values if v]
+    if len(values) == 0:
+        # then maybe removed too much
+        values = values0
+    if values:
+        if ret_all:
+            ret = values
+        else:
+            ret = [values[-1]]
+    else:
+        ret = []
+    return ret

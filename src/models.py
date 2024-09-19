@@ -22,7 +22,7 @@ def anthropic_completion_with_backoff(client, *args, **kwargs):
 def get_anthropic(model: str,
                   prompt: str,
                   temperature: float = 0,
-                  max_tokens: int = 1024,
+                  max_tokens: int = 4096,
                   system: str = '',
                   chat_history: List[Dict] = None,
                   verbose=False) -> \
@@ -115,7 +115,7 @@ def openai_completion_with_backoff(client, *args, **kwargs):
 def get_openai(model: str,
                prompt: str,
                temperature: float = 0,
-               max_tokens: int = 1024,
+               max_tokens: int = 4096,
                system: str = '',
                chat_history: List[Dict] = None,
                verbose=False) -> Generator[dict, None, None]:
@@ -203,7 +203,7 @@ def gemini_generate_content_with_backoff(model, prompt, stream=True):
 def get_google(model: str,
                prompt: str,
                temperature: float = 0,
-               max_tokens: int = 1024,
+               max_tokens: int = 4096,
                system: str = '',
                chat_history: List[Dict] = None,
                verbose=False) -> Generator[dict, None, None]:
@@ -305,7 +305,7 @@ def delete_cache(cache):
 def get_groq(model: str,
              prompt: str,
              temperature: float = 0,
-             max_tokens: int = 1024,
+             max_tokens: int = 4096,
              system: str = '',
              chat_history: List[Dict] = None,
              verbose=False) -> Generator[dict, None, None]:
@@ -349,7 +349,7 @@ def get_groq(model: str,
 def get_openai_azure(model: str,
                      prompt: str,
                      temperature: float = 0,
-                     max_tokens: int = 1024,
+                     max_tokens: int = 4096,
                      system: str = '',
                      chat_history: List[Dict] = None,
                      verbose=False) -> Generator[dict, None, None]:
