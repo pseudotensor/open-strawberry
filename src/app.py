@@ -2,8 +2,12 @@ import os
 
 import streamlit as st
 import time
-from open_strawberry import get_defaults, manage_conversation
-from src.models import get_all_model_names
+try:
+    from src.models import get_all_model_names
+    from src.open_strawberry import get_defaults, manage_conversation
+except (ModuleNotFoundError, ImportError):
+    from models import get_all_model_names
+    from open_strawberry import get_defaults, manage_conversation
 
 (model, system_prompt, initial_prompt, expected_answer,
  next_prompts, num_turns, show_next, final_prompt,

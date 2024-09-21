@@ -4,8 +4,12 @@ import time
 from typing import List, Dict, Generator, Tuple
 from collections import deque
 
-from src.models import get_model_api
-from src.utils import get_turn_title, get_final_answer, get_xml_tag_value
+try:
+    from src.models import get_model_api
+    from src.utils import get_turn_title, get_final_answer, get_xml_tag_value
+except (ModuleNotFoundError, ImportError):
+    from models import get_model_api
+    from utils import get_turn_title, get_final_answer, get_xml_tag_value
 
 
 class DeductionTracker:
