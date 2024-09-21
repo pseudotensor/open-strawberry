@@ -26,8 +26,12 @@ pip install -r requirements.txt
 Fill `.env` with required API keys etc or set ENVs, e.g.:
 ```.env
 # OpenAI
+# Can be OpenAI key or vLLM or other OpenAI proxies:
 OPENAI_API_KEY=
+# only require below for vLLM or other OpenAI proxies:
 OPENAI_BASE_URL=
+# only require below for vLLM or other OpenAI proxies:
+OPENAI_MODEL_NAME=
 
 # ollama
 OLLAMA_OPENAI_API_KEY=
@@ -40,6 +44,8 @@ AZURE_OPENAI_API_KEY=
 OPENAI_API_VERSION=
 AZURE_OPENAI_ENDPOINT=
 AZURE_OPENAI_DEPLOYMENT=
+# not required
+AZURE_OPENAI_MODEL_NAME=
 
 # Others
 GEMINI_API_KEY=

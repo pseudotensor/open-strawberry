@@ -360,7 +360,7 @@ def get_openai_azure(model: str,
     azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")  # e.g. https://project.openai.azure.com
     azure_key = os.getenv("AZURE_OPENAI_API_KEY")
     azure_deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT")  # i.e. deployment name with some models deployed
-    azure_api_version = os.getenv('OPENAI_API_VERSION', '2024-07-01-preview')
+    azure_api_version = os.getenv('AZURE_OPENAI_API_VERSION', '2024-07-01-preview')
     assert azure_endpoint is not None, "Azure OpenAI endpoint not set"
     assert azure_key is not None, "Azure OpenAI API key not set"
     assert azure_deployment is not None, "Azure OpenAI deployment not set"
@@ -400,49 +400,84 @@ def get_openai_azure(model: str,
     yield dict(output_tokens=output_tokens, input_tokens=input_tokens)
 
 
-def get_model_names():
-    anthropic_models = ['claude-3-opus-20240229', 'claude-3-5-sonnet-20240620', 'claude-3-haiku-20240307']
-    openai_models = ['gpt-4o', 'gpt-4-turbo-2024-04-09', 'gpt-4o-mini']
-    google_models = ['gemini-1.5-pro-latest', 'gemini-1.5-flash-latest']
-    groq_models = ['llama3-groq-70b-8192-tool-use-preview', 'llama3-groq-8b-8192-tool-use-preview',
-                   'llama-3.1-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768']
+def to_list(x):
+    if x:
+        try:
+            ollama_model_list = ast.literal_eval(x)
+            assert isinstance(ollama_model_list, list)
+        except:
+            x = [x]
+    else:
+        x = []
+    return x
+
+
+def get_model_names(secrets, on_hf_spaces=False):
+    if not on_hf_spaces:
+        secrets = os.environ
+    if secrets.get('ANTHROPIC_API_KEY'):
+        anthropic_models = ['claude-3-5-sonnet-20240620', 'claude-3-haiku-20240307', 'claude-3-opus-20240229']
+    else:
+        anthropic_models = []
+    if secrets.get('OPENAI_API_KEY'):
+        if os.getenv('OPENAI_MODEL_NAME'):
+            openai_models = to_list(os.getenv('OPENAI_MODEL_NAME'))
+        else:
+            openai_models = ['gpt-4o', 'gpt-4-turbo-2024-04-09', 'gpt-4o-mini']
+    else:
+        openai_models = []
+    if secrets.get('AZURE_OPENAI_API_KEY'):
+        if os.getenv('AZURE_OPENAI_MODEL_NAME'):
+            azure_models = to_list(os.getenv('AZURE_OPENAI_MODEL_NAME'))
+        else:
+            azure_models = ['gpt-4o', 'gpt-4-turbo-2024-04-09', 'gpt-4o-mini']
+    else:
+        azure_models = []
+    if secrets.get('GEMINI_API_KEY'):
+        google_models = ['gemini-1.5-pro-latest', 'gemini-1.5-flash-latest']
+    else:
+        google_models = []
+    if secrets.get('GROQ_API_KEY'):
+        groq_models = ['llama-3.1-70b-versatile',
+                       'llama-3.1-8b-instant',
+                       'llama3-groq-70b-8192-tool-use-preview',
+                       'llama3-groq-8b-8192-tool-use-preview',
+                       'mixtral-8x7b-32768']
+    else:
+        groq_models = []
+    if secrets.get('OLLAMA_OPENAI_API_KEY'):
+        ollama_model = os.environ['OLLAMA_OPENAI_MODEL_NAME']
+        ollama_model = to_list(ollama_model)
+    else:
+        ollama_model = []
+
     groq_models = ['groq:' + x for x in groq_models]
-    azure_models = ['azure:' + x for x in openai_models]
+    azure_models = ['azure:' + x for x in azure_models]
     openai_models = ['openai:' + x for x in openai_models]
     google_models = ['google:' + x for x in google_models]
     anthropic_models = ['anthropic:' + x for x in anthropic_models]
-
-    ollama_model = os.getenv('OLLAMA_OPENAI_MODEL_NAME')
-    if ollama_model:
-        try:
-            ollama_model_list = ast.literal_eval(ollama_model)
-            assert isinstance(ollama_model_list, list)
-        except:
-            ollama_model_list = [ollama_model]
-    else:
-        ollama_model_list = []
-    ollama = ['ollama:' + x if 'ollama:' not in x else x for x in ollama_model_list]
+    ollama = ['ollama:' + x if 'ollama:' not in x else x for x in ollama_model]
 
     return anthropic_models, openai_models, google_models, groq_models, azure_models, ollama
 
 
-def get_all_model_names():
-    anthropic_models, openai_models, google_models, groq_models, azure_models, ollama = get_model_names()
+def get_all_model_names(secrets, on_hf_spaces=False):
+    anthropic_models, openai_models, google_models, groq_models, azure_models, ollama = get_model_names(secrets,
+                                                                                                        on_hf_spaces=on_hf_spaces)
     return anthropic_models + openai_models + google_models + groq_models + azure_models + ollama
 
 
 def get_model_api(model: str):
-    anthropic_models, openai_models, google_models, groq_models, azure_models, ollama = get_model_names()
-
-    if model in anthropic_models:
+    if model.startswith('anthropic:'):
         return get_anthropic
-    elif model in openai_models + ollama:
+    elif model.startswith('openai:') or model.startswith('ollama:'):
         return get_openai
-    elif model in google_models:
+    elif model.startswith('google:'):
         return get_google
-    elif model in groq_models:
+    elif model.startswith('groq:'):
         return get_groq
-    elif model in azure_models:
+    elif model.startswith('azure:'):
         return get_openai_azure
     else:
-        raise ValueError(f"Unsupported model: {model}.  Ensure to add prefix (e.g. openai:, google:, groq:, azure:, ollama:, anthropic:)")
+        raise ValueError(
+            f"Unsupported model: {model}.  Ensure to add prefix (e.g. openai:, google:, groq:, azure:, ollama:, anthropic:)")

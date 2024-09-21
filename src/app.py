@@ -16,8 +16,6 @@ st.title("Open Strawberry Conversation")
 st.markdown("[Open Strawberry GitHub Repo](https://github.com/pseudotensor/open-strawberry)")
 
 # Initialize session state
-if "model_name" not in st.session_state:
-    st.session_state["model_name"] = "anthropic:claude-3-haiku-20240307"
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "turn_count" not in st.session_state:
@@ -118,8 +116,63 @@ if st.button("Start Conversation", disabled=st.session_state.conversation_starte
 # Sidebar
 st.sidebar.title("Controls")
 
+on_hf_spaces = os.getenv("HF_SPACES", '0') == '1'
+
+
+def save_env_vars(env_vars):
+    assert not on_hf_spaces, "Cannot save env vars in HF Spaces"
+    env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
+    from dotenv import set_key
+    for key, value in env_vars.items():
+        set_key(env_path, key, value)
+
+
+def get_dotenv_values():
+    if on_hf_spaces:
+        return st.session_state.secrets
+    else:
+        from dotenv import dotenv_values
+        return dotenv_values(os.path.join(os.path.dirname(__file__), "..", ".env"))
+
+
+if 'secrets' not in st.session_state:
+    if on_hf_spaces:
+        # allow user to enter
+        st.session_state.secrets = dict(OPENAI_API_KEY='',
+                                        OPENAI_BASE_URL='https://api.openai.com/v1',
+                                        OPENAI_MODEL_NAME='',
+                                        # OLLAMA_OPENAI_API_KEY='',
+                                        # OLLAMA_OPENAI_BASE_URL='http://localhost:11434/v1/',
+                                        # OLLAMA_OPENAI_MODEL_NAME='',
+                                        # AZURE_OPENAI_API_KEY='',
+                                        # AZURE_OPENAI_API_VERSION='',
+                                        # AZURE_OPENAI_ENDPOINT='',
+                                        # AZURE_OPENAI_DEPLOYMENT='',
+                                        # AZURE_OPENAI_MODEL_NAME='',
+                                        GEMINI_API_KEY='',
+                                        # MISTRAL_API_KEY='',
+                                        GROQ_API_KEY='',
+                                        ANTHROPIC_API_KEY='',
+                                        )
+
+    else:
+        st.session_state.secrets = {}
+
+
+def update_model_selection():
+    visible_models1 = get_all_model_names(st.session_state.secrets, on_hf_spaces)
+    if visible_models1 and "model_name" in st.session_state:
+        if st.session_state.model_name not in visible_models1:
+            st.session_state.model_name = visible_models1[0]
+
+
+# Replace the existing model selection code with this
+if 'model_name' not in st.session_state or not st.session_state.model_name:
+    update_model_selection()
+
 # Model selection
-st.sidebar.selectbox("Select Model", get_all_model_names(), key="model_name",
+visible_models = get_all_model_names(st.session_state.secrets, on_hf_spaces)
+st.sidebar.selectbox("Select Model", visible_models, key="model_name",
                      disabled=st.session_state.conversation_started)
 st.sidebar.checkbox("Show Next", value=show_next, key="show_next", disabled=st.session_state.conversation_started)
 st.sidebar.number_input("Num Turns to Check if Final Answer", value=num_turns_final_mod, key="num_turns_final_mod",
@@ -129,29 +182,22 @@ st.sidebar.number_input("Num Turns per User Click of Continue", value=num_turns,
 st.sidebar.checkbox("Show Chain of Thoughts Details", value=show_cot, key="show_cot",
                     disabled=st.session_state.conversation_started)
 
-
-def save_env_vars(env_vars):
-    env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
-    from dotenv import set_key
-    for key, value in env_vars.items():
-        set_key(env_path, key, value)
-
-
-def get_dotenv_values():
-    from dotenv import dotenv_values
-    return dotenv_values(os.path.join(os.path.dirname(__file__), "..", ".env"))
-
-
 # Reset conversation button
 reset_clicked = st.sidebar.button("Reset Conversation")
-with st.sidebar.expander("Edit dotenv"):
+with st.sidebar.expander("Edit in-memory session secrets" if on_hf_spaces else "Edit .env", expanded=on_hf_spaces):
     dotenv_dict = get_dotenv_values()
     new_env = {}
     for k, v in dotenv_dict.items():
-        new_env[k] = st.text_input(k, value=v, key=k, disabled=st.session_state.conversation_started)
-    if st.button("Save dotenv"):
-        save_env_vars(new_env)
-        st.success("dotenv saved")
+        new_env[k] = st.text_input(k, value=v, key=k, disabled=st.session_state.conversation_started, type="password")
+        st.session_state.secrets[k] = new_env[k]
+    save_secrets_clicked = st.button("Save dotenv" if not on_hf_spaces else "Save secrets to memory")
+
+    if save_secrets_clicked:
+        if on_hf_spaces:
+            st.success("secrets temporarily stored to your session memory only")
+        else:
+            save_env_vars(st.session_state.user_secrets)
+            st.success("dotenv saved to .env file")
 
 if reset_clicked:
     st.session_state.messages = []
