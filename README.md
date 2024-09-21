@@ -10,6 +10,10 @@ Contributions very welcome!
 
 ![img_1.png](img_1.png)
 
+One of the chains of thought:
+
+![img_2.png](img_2.png)
+
 ## Installation
 
 Python >=3.10 should be fine, then:
