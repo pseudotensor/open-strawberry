@@ -127,6 +127,7 @@ Repeat generation of reasoning traces and fine-tuning until the model can do the
 2. Human labeling or human verification of reasoning traces are not required.
 3. Fine-tuned models for verification are not required, whichever step.
 4. RLHF is not strictly required, just DPO.
+5. OpenAI is using Deep RL for training the reasoning traces, but I don't think this is required.
 
 ## Project Goals
 

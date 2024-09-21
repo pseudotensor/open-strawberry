@@ -427,7 +427,13 @@ def get_defaults() -> Tuple:
 * Periodically, you should review your previous reasoning steps and check for errors or inconsistencies. If you find any, correct them.
 * You MUST always end with a very brief natural language title (it should just describe the analysis, do not give step numbers) of what you did inside <turn_title> </turn_title> XML tags. Only a single title is allowed.
 * Do not provide the final answer unless the user specifically requests it using the final prompt.
-</thinking_game>"""
+</thinking_game>
+Remember to compensate for your flaws:
+<system_flaws>
+* Flaw 1: Bad at counting due to tokenization issues.  Expand word with spaces between first and then only count that expanded version.
+* Flaw 2: Grade school or advanced math.  Solve such problems very carefully step-by-step.
+</system_flaws>
+"""
 
     next_prompts = [
         "Continue your effort to answer the original query. What's your next step?",
