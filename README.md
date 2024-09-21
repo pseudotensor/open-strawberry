@@ -169,6 +169,10 @@ Harder problems are still out of reach, which o1-preview only gets about 50% of 
 
 ![img.png](img.png)
 
+Easy problems are reliably solved:
+
+![img_3.png](img_3.png)
+
 ## Contributing
 
 We welcome contributions from the community. Please see our [CONTRIBUTING.md](CONTRIBUTING.md) file for guidelines on how to participate.
