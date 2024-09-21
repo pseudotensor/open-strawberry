@@ -8,7 +8,7 @@ If you want to support the project, turn ★ into ⭐ (top-right corner) and sha
 
 Contributions very welcome!
 
-![img.png](img.png)
+![img_1.png](img_1.png)
 
 ## Installation
 
@@ -160,6 +160,10 @@ TODO:
 - [ ] Repeat on next round of CoT-friendly prompts excluding original prompts, so can bootstrap
 - [ ] Fine-tune on top of Fine-tune including with mix of normal data as well with similar distribution
 - [ ] Repeat overall until bootstrap-repeat ones way to a smarter model
+
+Harder problems are still out of reach, which o1-preview only gets about 50% of the time (code agents get 90% of the time):
+
+![img.png](img.png)
 
 ## Contributing
 

@@ -332,7 +332,10 @@ def manage_conversation(model: str,
         else:
             prompt = random.choice(next_prompts)
 
-        yield {"role": "user", "content": prompt, "chat_history": chat_history, "initial": turn_count == 0}
+        if turn_count == 0:
+            yield {"role": "user", "content": initial_prompt, "chat_history": chat_history, "initial": turn_count == 0}
+        else:
+            yield {"role": "user", "content": prompt, "chat_history": chat_history, "initial": turn_count == 0}
 
         thinking_time = time.time()
         response_text = ''
