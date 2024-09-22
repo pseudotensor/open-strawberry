@@ -119,7 +119,7 @@ Bootstrapping is key via progressive learning.
 1. Bootstrap starting from existing supervised fine-tuned, instruction-tuned, preference-tuned models using multi-turn chat history.
 2. Implement a prompt system that guides the LLM to take incremental steps towards a solution.
 3. Randomized useful CoT prompts from user (e.g. not just next but "are you sure?" "any mistakes?" "how would you verify your answer?") to illicit diverse reasoning and introspection.
-4. Emphasize the LLM to make the most miniscule step toward the solution, e.g. even a single phrase or sentence is preferred.  Only once the final answer would be produced should an extended full response be given.
+4. Emphasize the LLM to make the most minuscule step toward the solution, e.g. even a single phrase or sentence is preferred.  Only once the final answer would be produced should an extended full response be given.
 5. Generate multi-turn chat reasoning traces
 6. Sometimes ask if the model is confident about an answer.  If so, then ask it to place that answer in <final_answer> xml tags.  If done, then terminate the reasoning trace generation.
 7. Employ a verification system to check for errors in the chat history.
