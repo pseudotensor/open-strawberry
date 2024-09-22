@@ -50,6 +50,8 @@ if "verbose" not in st.session_state:
     st.session_state.verbose = verbose
 if "max_tokens" not in st.session_state:
     st.session_state.max_tokens = max_tokens
+if "seed" not in st.session_state:
+    st.session_state.seed = 0
 if "temperature" not in st.session_state:
     st.session_state.temperature = temperature
 if "next_prompts" not in st.session_state:
@@ -272,6 +274,8 @@ try:
                 num_turns=st.session_state.num_turns,
                 temperature=st.session_state.temperature,
                 max_tokens=st.session_state.max_tokens,
+                seed=st.session_state.seed,
+                secrets=st.session_state.secrets,
                 verbose=st.session_state.verbose,
             )
         chunk = next(st.session_state.generator)

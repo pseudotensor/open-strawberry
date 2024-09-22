@@ -1,4 +1,5 @@
 import argparse
+import os
 import time
 
 from src.open_strawberry import get_defaults, manage_conversation
@@ -54,6 +55,7 @@ def go_cli():
                                     temperature=args.temperature,
                                     max_tokens=args.max_tokens,
                                     seed=args.seed,
+                                    secrets=dict(os.environ),
                                     cli_mode=True)
     response = ''
     conversation_history = []

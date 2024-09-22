@@ -25,6 +25,7 @@ def get_anthropic(model: str,
                   max_tokens: int = 4096,
                   system: str = '',
                   chat_history: List[Dict] = None,
+                  secrets: Dict = {},
                   verbose=False) -> \
         Generator[dict, None, None]:
     model = model.replace('anthropic:', '')
@@ -32,7 +33,7 @@ def get_anthropic(model: str,
     # https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching
     import anthropic
 
-    clawd_key = os.getenv('ANTHROPIC_API_KEY')
+    clawd_key = secrets.get('ANTHROPIC_API_KEY')
     clawd_client = anthropic.Anthropic(api_key=clawd_key) if clawd_key else None
 
     if chat_history is None:
@@ -118,16 +119,16 @@ def get_openai(model: str,
                max_tokens: int = 4096,
                system: str = '',
                chat_history: List[Dict] = None,
+               secrets: Dict = {},
                verbose=False) -> Generator[dict, None, None]:
-    anthropic_models, openai_models, google_models, groq_models, azure_models, ollama = get_model_names()
-    if model in ollama:
+    if model.startswith('ollama:'):
         model = model.replace('ollama:', '')
-        openai_key = os.getenv('OLLAMA_OPENAI_API_KEY')
-        openai_base_url = os.getenv('OLLAMA_OPENAI_BASE_URL', 'http://localhost:11434/v1/')
+        openai_key = secrets.get('OLLAMA_OPENAI_API_KEY')
+        openai_base_url = secrets.get('OLLAMA_OPENAI_BASE_URL', 'http://localhost:11434/v1/')
     else:
         model = model.replace('openai:', '')
-        openai_key = os.getenv('OPENAI_API_KEY')
-        openai_base_url = os.getenv('OPENAI_BASE_URL', 'https://api.openai.com/v1')
+        openai_key = secrets.get('OPENAI_API_KEY')
+        openai_base_url = secrets.get('OPENAI_BASE_URL', 'https://api.openai.com/v1')
 
     from openai import OpenAI
 
@@ -206,12 +207,13 @@ def get_google(model: str,
                max_tokens: int = 4096,
                system: str = '',
                chat_history: List[Dict] = None,
+               secrets: Dict = {},
                verbose=False) -> Generator[dict, None, None]:
     model = model.replace('google:', '').replace('gemini:', '')
 
     import google.generativeai as genai
 
-    gemini_key = os.getenv("GEMINI_API_KEY")
+    gemini_key = secrets.get("GEMINI_API_KEY")
     genai.configure(api_key=gemini_key)
     # Create the model
     generation_config = {
@@ -308,12 +310,13 @@ def get_groq(model: str,
              max_tokens: int = 4096,
              system: str = '',
              chat_history: List[Dict] = None,
+             secrets: Dict = {},
              verbose=False) -> Generator[dict, None, None]:
     model = model.replace('groq:', '')
 
     from groq import Groq
 
-    groq_key = os.getenv("GROQ_API_KEY")
+    groq_key = secrets.get("GROQ_API_KEY")
     client = Groq(api_key=groq_key)
 
     if chat_history is None:
@@ -352,15 +355,16 @@ def get_openai_azure(model: str,
                      max_tokens: int = 4096,
                      system: str = '',
                      chat_history: List[Dict] = None,
+                     secrets: Dict = {},
                      verbose=False) -> Generator[dict, None, None]:
     model = model.replace('azure:', '').replace('openai_azure:', '')
 
     from openai import AzureOpenAI
 
-    azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")  # e.g. https://project.openai.azure.com
-    azure_key = os.getenv("AZURE_OPENAI_API_KEY")
-    azure_deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT")  # i.e. deployment name with some models deployed
-    azure_api_version = os.getenv('AZURE_OPENAI_API_VERSION', '2024-07-01-preview')
+    azure_endpoint = secrets.get("AZURE_OPENAI_ENDPOINT")  # e.g. https://project.openai.azure.com
+    azure_key = secrets.get("AZURE_OPENAI_API_KEY")
+    azure_deployment = secrets.get("AZURE_OPENAI_DEPLOYMENT")  # i.e. deployment name with some models deployed
+    azure_api_version = secrets.get('AZURE_OPENAI_API_VERSION', '2024-07-01-preview')
     assert azure_endpoint is not None, "Azure OpenAI endpoint not set"
     assert azure_key is not None, "Azure OpenAI API key not set"
     assert azure_deployment is not None, "Azure OpenAI deployment not set"
@@ -420,15 +424,15 @@ def get_model_names(secrets, on_hf_spaces=False):
     else:
         anthropic_models = []
     if secrets.get('OPENAI_API_KEY'):
-        if os.getenv('OPENAI_MODEL_NAME'):
-            openai_models = to_list(os.getenv('OPENAI_MODEL_NAME'))
+        if secrets.get('OPENAI_MODEL_NAME'):
+            openai_models = to_list(secrets.get('OPENAI_MODEL_NAME'))
         else:
             openai_models = ['gpt-4o', 'gpt-4-turbo-2024-04-09', 'gpt-4o-mini']
     else:
         openai_models = []
     if secrets.get('AZURE_OPENAI_API_KEY'):
-        if os.getenv('AZURE_OPENAI_MODEL_NAME'):
-            azure_models = to_list(os.getenv('AZURE_OPENAI_MODEL_NAME'))
+        if secrets.get('AZURE_OPENAI_MODEL_NAME'):
+            azure_models = to_list(secrets.get('AZURE_OPENAI_MODEL_NAME'))
         else:
             azure_models = ['gpt-4o', 'gpt-4-turbo-2024-04-09', 'gpt-4o-mini']
     else:

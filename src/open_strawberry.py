@@ -290,7 +290,8 @@ def manage_conversation(model: str,
                         temperature: float = 0.3,
                         max_tokens: int = 4096,
                         seed: int = 1234,
-                        verbose: bool = False
+                        secrets: Dict = {},
+                        verbose: bool = False,
                         ) -> Generator[Dict, None, list]:
     if seed == 0:
         seed = random.randint(0, 1000000)
@@ -344,7 +345,9 @@ def manage_conversation(model: str,
         thinking_time = time.time()
         response_text = ''
         for chunk in get_model_func(model, prompt, system=system, chat_history=chat_history,
-                                    temperature=temperature, max_tokens=max_tokens, verbose=verbose):
+                                    temperature=temperature, max_tokens=max_tokens,
+                                    secrets=secrets,
+                                    verbose=verbose):
             if 'text' in chunk and chunk['text']:
                 response_text += chunk['text']
                 yield {"role": "assistant", "content": chunk['text'], "streaming": True, "chat_history": chat_history,
