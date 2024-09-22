@@ -168,8 +168,8 @@ TODO:
 - [x] Add backoff
 - [x] Add ollama, google, azure, openai, groq, anthropic APIs with prompt caching for anthropic
 - [x] Add high-level summary of blocks of text like o1
-- [ ] Improve system prompt, vary it as well or separately from user next prompts
-- [ ] Add verifier that samples window of history and separately critiques the assistant output
+- [x] Improve system prompt, vary it as well or separately from user next prompts
+- [x] Add verifier that samples window of history and separately critiques the assistant output
 - [ ] Use existing datasets with ground truth to identify problems for which CoT achieves success after some trials
 - [ ] Harvest CoT-friendly prompts and collect positive and negative reasoning traces
 - [ ] Fine-tune with DPO including with mix of normal data as well with similar distribution 
