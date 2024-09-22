@@ -49,13 +49,17 @@ AZURE_OPENAI_DEPLOYMENT=
 # not required
 AZURE_OPENAI_MODEL_NAME=
 
-# Others
-GEMINI_API_KEY=
-MISTRAL_API_KEY=
-GROQ_API_KEY=
+# Anthropic prompt caching very efficient
 ANTHROPIC_API_KEY=
 
+GEMINI_API_KEY=
+# groq fast and long context
+GROQ_API_KEY=
+# cerebras only 8k context
+CEREBRAS_OPENAI_API_KEY=
+
 # WIP: not yet used
+MISTRAL_API_KEY=
 HUGGING_FACE_HUB_TOKEN=
 REPLICATE_API_TOKEN=
 TOGETHERAI_API_TOKEN=
