@@ -144,6 +144,7 @@ def get_dotenv_values():
 if 'secrets' not in st.session_state:
     if on_hf_spaces:
         # allow user to enter
+        st.markdown("For Cerebras use OPENAI_BASE_URL=https://api.cerebras.ai/v1")
         st.session_state.secrets = dict(OPENAI_API_KEY='',
                                         OPENAI_BASE_URL='https://api.openai.com/v1',
                                         OPENAI_MODEL_NAME='',
