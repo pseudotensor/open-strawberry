@@ -413,14 +413,20 @@ def manage_conversation(model: str,
 
 
 def get_defaults() -> Tuple:
-    initial_prompt = """Can you crack the code?
-9 2 8 5 (One number is correct but in the wrong position)
-1 9 3 7 (Two numbers are correct but in the wrong positions)
-5 2 0 1 (one number is correct and in the right position)
-6 5 0 7 (nothing is correct)
-8 5 2 4 (two numbers are correct but in the wrong positions)"""
+    on_hf_spaces = os.getenv("HF_SPACES", '0') == '1'
+    if on_hf_spaces:
+        initial_prompt = "How many r's are in strawberry?"
+        expected_answer = "3"
+    else:
 
-    expected_answer = "3841"
+        initial_prompt = """Can you crack the code?
+    9 2 8 5 (One number is correct but in the wrong position)
+    1 9 3 7 (Two numbers are correct but in the wrong positions)
+    5 2 0 1 (one number is correct and in the right position)
+    6 5 0 7 (nothing is correct)
+    8 5 2 4 (two numbers are correct but in the wrong positions)"""
+
+        expected_answer = "3841"
 
     system_prompt = """Let us play a game of "take only the most minuscule step toward the solution."
 <thinking_game>
