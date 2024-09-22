@@ -2,11 +2,12 @@ import os
 
 import streamlit as st
 import time
+
 try:
-    from src.models import get_all_model_names
+    from src.models import get_model_names
     from src.open_strawberry import get_defaults, manage_conversation
 except (ModuleNotFoundError, ImportError):
-    from models import get_all_model_names
+    from models import get_model_names
     from open_strawberry import get_defaults, manage_conversation
 
 (model, system_prompt, initial_prompt, expected_answer,
@@ -144,7 +145,6 @@ def get_dotenv_values():
 if 'secrets' not in st.session_state:
     if on_hf_spaces:
         # allow user to enter
-        st.markdown("For Cerebras use OPENAI_BASE_URL=https://api.cerebras.ai/v1")
         st.session_state.secrets = dict(OPENAI_API_KEY='',
                                         OPENAI_BASE_URL='https://api.openai.com/v1',
                                         OPENAI_MODEL_NAME='',
@@ -159,6 +159,7 @@ if 'secrets' not in st.session_state:
                                         GEMINI_API_KEY='',
                                         # MISTRAL_API_KEY='',
                                         GROQ_API_KEY='',
+                                        CEREBRAS_OPENAI_API_KEY='',
                                         ANTHROPIC_API_KEY='',
                                         )
 
@@ -167,7 +168,7 @@ if 'secrets' not in st.session_state:
 
 
 def update_model_selection():
-    visible_models1 = get_all_model_names(st.session_state.secrets, on_hf_spaces)
+    visible_models1 = get_model_names(st.session_state.secrets, on_hf_spaces)
     if visible_models1 and "model_name" in st.session_state:
         if st.session_state.model_name not in visible_models1:
             st.session_state.model_name = visible_models1[0]
@@ -178,7 +179,7 @@ if 'model_name' not in st.session_state or not st.session_state.model_name:
     update_model_selection()
 
 # Model selection
-visible_models = get_all_model_names(st.session_state.secrets, on_hf_spaces)
+visible_models = get_model_names(st.session_state.secrets, on_hf_spaces)
 st.sidebar.selectbox("Select Model", visible_models, key="model_name",
                      disabled=st.session_state.conversation_started)
 st.sidebar.checkbox("Show Next", value=show_next, key="show_next", disabled=st.session_state.conversation_started)

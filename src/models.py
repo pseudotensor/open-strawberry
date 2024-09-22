@@ -349,6 +349,52 @@ def get_groq(model: str,
     yield dict(output_tokens=output_tokens, input_tokens=input_tokens)
 
 
+def get_cerebras(model: str,
+                 prompt: str,
+                 temperature: float = 0,
+                 max_tokens: int = 4096,
+                 system: str = '',
+                 chat_history: List[Dict] = None,
+                 secrets: Dict = {},
+                 verbose=False) -> Generator[dict, None, None]:
+    # context_length is only 8207
+    model = model.replace('cerebras:', '')
+
+    from cerebras.cloud.sdk import Cerebras
+
+    api_key = secrets.get("CEREBRAS_OPENAI_API_KEY")
+    client = Cerebras(api_key=api_key)
+
+    if chat_history is None:
+        chat_history = []
+
+    chat_history = chat_history.copy()
+
+    messages = [{"role": "system", "content": system}] + chat_history + [{"role": "user", "content": prompt}]
+
+    stream = openai_completion_with_backoff(client,
+                                            messages=messages,
+                                            model=model,
+                                            temperature=temperature,
+                                            max_tokens=max_tokens,
+                                            stream=True,
+                                            )
+
+    output_tokens = 0
+    input_tokens = 0
+    for chunk in stream:
+        if chunk.choices[0].delta.content:
+            yield dict(text=chunk.choices[0].delta.content)
+        if chunk.usage:
+            output_tokens = chunk.usage.completion_tokens
+            input_tokens = chunk.usage.prompt_tokens
+
+    if verbose:
+        print(f"Output tokens: {output_tokens}")
+        print(f"Input tokens: {input_tokens}")
+    yield dict(output_tokens=output_tokens, input_tokens=input_tokens)
+
+
 def get_openai_azure(model: str,
                      prompt: str,
                      temperature: float = 0,
@@ -449,6 +495,10 @@ def get_model_names(secrets, on_hf_spaces=False):
                        'mixtral-8x7b-32768']
     else:
         groq_models = []
+    if secrets.get('CEREBRAS_OPENAI_API_KEY'):
+        cerebras_models = ['llama3.1-70b', 'llama3.1-8b']
+    else:
+        cerebras_models = []
     if secrets.get('OLLAMA_OPENAI_API_KEY'):
         ollama_model = os.environ['OLLAMA_OPENAI_MODEL_NAME']
         ollama_model = to_list(ollama_model)
@@ -456,19 +506,14 @@ def get_model_names(secrets, on_hf_spaces=False):
         ollama_model = []
 
     groq_models = ['groq:' + x for x in groq_models]
+    cerebras_models = ['cerebras:' + x for x in cerebras_models]
     azure_models = ['azure:' + x for x in azure_models]
     openai_models = ['openai:' + x for x in openai_models]
     google_models = ['google:' + x for x in google_models]
     anthropic_models = ['anthropic:' + x for x in anthropic_models]
     ollama = ['ollama:' + x if 'ollama:' not in x else x for x in ollama_model]
 
-    return anthropic_models, openai_models, google_models, groq_models, azure_models, ollama
-
-
-def get_all_model_names(secrets, on_hf_spaces=False):
-    anthropic_models, openai_models, google_models, groq_models, azure_models, ollama = get_model_names(secrets,
-                                                                                                        on_hf_spaces=on_hf_spaces)
-    return anthropic_models + openai_models + google_models + groq_models + azure_models + ollama
+    return anthropic_models + openai_models + google_models + groq_models + cerebras_models + azure_models + ollama
 
 
 def get_model_api(model: str):
@@ -480,8 +525,10 @@ def get_model_api(model: str):
         return get_google
     elif model.startswith('groq:'):
         return get_groq
+    elif model.startswith('cerebras:'):
+        return get_cerebras
     elif model.startswith('azure:'):
         return get_openai_azure
     else:
         raise ValueError(
-            f"Unsupported model: {model}.  Ensure to add prefix (e.g. openai:, google:, groq:, azure:, ollama:, anthropic:)")
+            f"Unsupported model: {model}.  Ensure to add prefix (e.g. openai:, google:, groq:, cerebras:, azure:, ollama:, anthropic:)")

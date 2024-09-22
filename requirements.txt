@@ -4,6 +4,7 @@ anthropic
 openai
 google-generativeai
 groq
+cerebras_cloud_sdk
 
 streamlit
 blinker
