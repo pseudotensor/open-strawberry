@@ -114,7 +114,7 @@ def display_turn_title(chunk1, display_step=None):
         st.markdown(f'**{name} {display_step}: {turn_title}{step_time}{acum_time}**', unsafe_allow_html=True)
 
 
-if st.button("Start Conversation", disabled=st.session_state.conversation_started):
+if st.button("Start Reasoning Engine", disabled=st.session_state.conversation_started):
     st.session_state.conversation_started = True
 
 # Sidebar
