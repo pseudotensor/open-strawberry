@@ -517,6 +517,7 @@ def get_model_names(secrets, on_hf_spaces=False):
 
 
 def get_model_api(model: str):
+    assert model not in ['', None], "Model not set, need to add API key to have models appear and select one."
     if model.startswith('anthropic:'):
         return get_anthropic
     elif model.startswith('openai:') or model.startswith('ollama:'):
