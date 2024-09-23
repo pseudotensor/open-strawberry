@@ -241,7 +241,7 @@ if not st.session_state.conversation_started:
     answer = st.text_area("Expected answer (Empty if do not know)", value=expected_answer,
                           key=f"answer_{st.session_state.input_key}", height=100)
     st.session_state.answer = answer
-    system_prompt = st.text_area("System Prompt", value=system_prompt,
+    system_prompt = st.text_area("Base System Prompt", value=system_prompt,
                                  key=f"system_prompt_{st.session_state.input_key}", height=200)
     st.session_state.system_prompt = system_prompt
 else:
