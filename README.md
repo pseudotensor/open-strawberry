@@ -238,6 +238,8 @@ This project is speculative and based on publicly available information about Op
 
 [P5] Nash Learning from Human Feedback: https://arxiv.org/abs/2312.00886
 
+[P6] Scaling LLM Test-Time Compute Optimally can be More Effective than Scaling Model Parameters https://arxiv.org/abs/2408.03314
+
 Related Projects:
 * https://github.com/daveshap/Raspberry
 * https://github.com/bklieger-groq/g1
