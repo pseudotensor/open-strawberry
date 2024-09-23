@@ -145,6 +145,10 @@ Repeat generation of reasoning traces and fine-tuning until the model can do the
 4. RLHF is not strictly required, just DPO.
 5. OpenAI is using Deep RL for training the reasoning traces, but I don't think this is required.
 
+## Justifications
+
+[P10] is recent paper that validates our proposal of using self-generated multi-turn data to slightly progressively push the model towards self-correction.
+
 ## Project Goals
 
 1. Generate reasoning traces using the proposed approach.
@@ -239,6 +243,14 @@ This project is speculative and based on publicly available information about Op
 [P5] Nash Learning from Human Feedback: https://arxiv.org/abs/2312.00886
 
 [P6] Scaling LLM Test-Time Compute Optimally can be More Effective than Scaling Model Parameters https://arxiv.org/abs/2408.03314
+
+[P7] Enhancing LLM Problem Solving with REAP: Reflection, Explicit Problem Deconstruction, and Advanced Prompting https://arxiv.org/abs/2409.09415
+
+[P8] Agent Q: Advanced Reasoning and Learning for Autonomous AI Agents https://arxiv.org/abs//2408.07199
+
+[P9] Scaling Scaling Laws with Board Games https://arxiv.org/abs/2104.03113
+
+[P10] Training Language Models to Self-Correct via Reinforcement Learning https://arxiv.org/abs/2409.12917
 
 Related Projects:
 * https://github.com/daveshap/Raspberry
