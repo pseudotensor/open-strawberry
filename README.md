@@ -261,3 +261,4 @@ Related Projects:
 Related Videos:
 * https://www.youtube.com/watch?v=tpun1uOKecc (Cascading prompts with repeated CoT)
 * https://youtu.be/EY9iHSe82Hc?t=2742 (Noam Brown on self-play with LLMs)
+* https://youtu.be/NvAxuCIBb-c?list=PLdRIRsTuD7wwJXhoi9vVXEo9KTUfBxLHF (Why Vlad Tenev and Tudor Achim of Harmonic Think AI Is About to Change Math—and Why It Matters)
