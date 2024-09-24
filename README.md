@@ -260,3 +260,4 @@ Related Projects:
 
 Related Videos:
 * https://www.youtube.com/watch?v=tpun1uOKecc (Cascading prompts with repeated CoT)
+* https://youtu.be/EY9iHSe82Hc?t=2742 (Noam Brown on self-play with LLMs)
