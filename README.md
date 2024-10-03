@@ -107,8 +107,8 @@ This project aims to recreate a similar system using open-source tools and metho
 
 ### Speculative Definitions
 
-- **Q***: A hypothetical primordial search-generation algorithm developed by OpenAI to generate training data.
-- **Strawberry**: An advanced search-generation algorithm by OpenAI for generating and verifying training data.
+- **Q***: A hypothetical primordial search-generation deep RL algorithm developed by OpenAI to generate training data.
+- **Strawberry**: An advanced search-generation deep RL algorithm by OpenAI for generating and verifying training data.
 - **o1**: GPT-4o and GPT-4o-mini based but fine-tuned on Strawberry data, including o1-mini, o1-preview, o1, and o1-ioi. [1]
 - **Orion**: GPT-5-based model that incorporates Strawberry's synthetic data and manages 0-shot vs. long reasoning queries better.
 
@@ -144,6 +144,7 @@ Repeat generation of reasoning traces and fine-tuning until the model can do the
 3. Fine-tuned models for verification are not required, whichever step.
 4. RLHF is not strictly required, just DPO.
 5. OpenAI is using Deep RL for training the reasoning traces, but I don't think this is required.  self-play is powerful, but may be mimicked by DPO.
+6. Deep RL is just way to generate data in efficient manner, but is not required and just hold-over from OpenAI's prior work on it.
 
 ## Justifications
 
@@ -262,3 +263,4 @@ Related Videos:
 * https://www.youtube.com/watch?v=tpun1uOKecc (Cascading prompts with repeated CoT)
 * https://youtu.be/EY9iHSe82Hc?t=2742 (Noam Brown on self-play with LLMs)
 * https://youtu.be/NvAxuCIBb-c?list=PLdRIRsTuD7wwJXhoi9vVXEo9KTUfBxLHF (Why Vlad Tenev and Tudor Achim of Harmonic Think AI Is About to Change Math—and Why It Matters)
+* https://youtu.be/jPluSXJpdrA?si=YsPKFX57t7eyEl5o (OpenAI's Noam Brown, Ilge Akkaya and Hunter Lightman on o1 and Teaching LLMs to Reason Better)
