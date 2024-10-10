@@ -254,10 +254,19 @@ This project is speculative and based on publicly available information about Op
 [P10] Training Language Models to Self-Correct via Reinforcement Learning https://arxiv.org/abs/2409.12917
 
 Related Projects:
-* https://github.com/daveshap/Raspberry
-* https://github.com/bklieger-groq/g1
-* https://github.com/ranfysvalle02/llm-reasoning-illusion
-* https://github.com/hijkzzz/Awesome-LLM-Strawberry
+- [OpenO1 Team] [Open-Source O1](https://opensource-o1.github.io/)
+- [GAIR-NLP] [O1 Replication Journey: A Strategic Progress Report](https://github.com/GAIR-NLP/O1-Journey)
+- [Maitrix.org] [LLM Reasoners](https://github.com/maitrix-org/llm-reasoners)
+- [bklieger-groq] [g1: Using Llama-3.1 70b on Groq to create o1-like reasoning chains](https://github.com/bklieger-groq/g1)
+- [o1-chain-of-thought] [Transcription of o1 Reasoning Traces from OpenAI blog post](https://github.com/bradhilton/o1-chain-of-thought)
+- [toyberry] [Toyberry: A end to end tiny implementation of OpenAI's o1 reasoning system using MCTS and LLM as backend](https://github.com/ack-sec/toyberry)
+- [Raspberry] [Raspberry](https://github.com/daveshap/Raspberry)
+- [Reasoning Illusion] [Illusion](https://github.com/ranfysvalle02/llm-reasoning-illusion)
+- [reasoning tokens] https://www.reddit.com/r/LocalLLaMA/comments/1fxf5n3/introducing_my_reasoning_model_no_tags_just_logic/?share_id=jXvYLkLukDIWxcalcheFd&utm_content=2&utm_medium=ios_app&utm_name=ioscss&utm_source=share&utm_term=1
+  * But IMHO, the LLM just sees a different token than `<thinking>` and now it's `<reasoning>`.
+
+Resource:
+* [Awsome-LLM-Strawberry] [Awsome-LLM-Strawberry](https://github.com/hijkzzz/Awesome-LLM-Strawberry)
 
 Related Videos:
 * https://www.youtube.com/watch?v=tpun1uOKecc (Cascading prompts with repeated CoT)
