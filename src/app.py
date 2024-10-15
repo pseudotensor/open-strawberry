@@ -5,20 +5,8 @@ import time
 
 try:
     from src.models import get_model_names
-    from src.open_strawberry import get_defaults, manage_conversation
 except (ModuleNotFoundError, ImportError):
     from models import get_model_names
-    from open_strawberry import get_defaults, manage_conversation
-
-(model, system_prompt, initial_prompt, expected_answer,
- next_prompts, num_turns, show_next, final_prompt,
- temperature, max_tokens,
- num_turns_final_mod,
- show_cot,
- verbose) = get_defaults()
-
-st.title("Open Strawberry Conversation")
-st.markdown("[Open Strawberry GitHub Repo](https://github.com/pseudotensor/open-strawberry)")
 
 # Initialize session state
 if "messages" not in st.session_state:
@@ -47,6 +35,33 @@ if "cache_creation_input_tokens" not in st.session_state:
     st.session_state.cache_creation_input_tokens = 0
 if "cache_read_input_tokens" not in st.session_state:
     st.session_state.cache_read_input_tokens = 0
+
+
+# Sidebar
+st.sidebar.title("Controls")
+st.sidebar.number_input("Strawberry Flavor", value=0, key="version", disabled=st.session_state.conversation_started)
+
+if st.session_state.version == 0:
+    try:
+        from src.open_strawberry import get_defaults, manage_conversation
+    except (ModuleNotFoundError, ImportError):
+        from open_strawberry import get_defaults, manage_conversation
+else:
+    try:
+        from src.open_strawberry2 import get_defaults, manage_conversation
+    except (ModuleNotFoundError, ImportError):
+        from open_strawberry2 import get_defaults, manage_conversation
+
+(model, system_prompt, initial_prompt, expected_answer,
+ next_prompts, num_turns, show_next, final_prompt,
+ temperature, max_tokens,
+ num_turns_final_mod,
+ show_cot,
+ verbose) = get_defaults()
+
+st.title("Open Strawberry Conversation")
+st.markdown("[Open Strawberry GitHub Repo](https://github.com/pseudotensor/open-strawberry)")
+
 if "verbose" not in st.session_state:
     st.session_state.verbose = verbose
 if "max_tokens" not in st.session_state:
@@ -119,9 +134,6 @@ def display_turn_title(chunk1, display_step=None):
 
 if st.button("Start Reasoning Engine", disabled=st.session_state.conversation_started):
     st.session_state.conversation_started = True
-
-# Sidebar
-st.sidebar.title("Controls")
 
 on_hf_spaces = os.getenv("HF_SPACES", '0') == '1'
 

@@ -382,9 +382,7 @@ def manage_conversation(model: str,
         yield {"role": "assistant", "content": turn_title, "turn_title": True, 'thinking_time': thinking_time,
                'total_thinking_time': total_thinking_time}
 
-        chat_history.append(
-            {"role": "user",
-             "content": [{"type": "text", "text": prompt, "cache_control": {"type": "ephemeral"}}]})
+        chat_history.append({"role": "user", "content": prompt})
         chat_history.append({"role": "assistant", "content": response_text})
 
         # Adjusted to only check final answer when trying_final is True

@@ -2,7 +2,12 @@ import argparse
 import os
 import time
 
-from src.open_strawberry import get_defaults, manage_conversation
+if os.getenv('STRAWBERRY_VERSION', '1') == '1' or os.getenv('STRAWBERRY_VERSION') is None:
+    from src.open_strawberry import get_defaults, manage_conversation
+elif os.getenv('STRAWBERRY_VERSION', '2') == '2':
+    from src.open_strawberry2 import get_defaults, manage_conversation
+else:
+    raise ValueError("STRAWBERRY_VERSION not set correctly")
 
 
 def parse_arguments(model, system_prompt, next_prompts, num_turns, show_next, final_prompt,

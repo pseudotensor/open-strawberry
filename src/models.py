@@ -44,12 +44,24 @@ def get_anthropic(model: str,
     # Add conversation history, removing cache_control from all but the last two user messages
     for i, message in enumerate(chat_history):
         if message["role"] == "user":
+            content = message["content"][0]["text"] if isinstance(message["content"], list) else message["content"]
+
             if i >= len(chat_history) - 3:  # Last two user messages
-                messages.append(message)
+                messages.append({
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": content,
+                            "cache_control": {"type": "ephemeral"}
+                        }
+                    ]
+                })
+
             else:
                 messages.append({
                     "role": "user",
-                    "content": [{"type": "text", "text": message["content"][0]["text"]}]
+                    "content": [{"type": "text", "text": content}]
                 })
         else:
             messages.append(message)
