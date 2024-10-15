@@ -39,18 +39,20 @@ if "cache_read_input_tokens" not in st.session_state:
 
 # Sidebar
 st.sidebar.title("Controls")
-st.sidebar.number_input("Strawberry Flavor", value=0, key="version", disabled=st.session_state.conversation_started)
+st.sidebar.number_input("Strawberry Flavor", value=2, key="version", disabled=st.session_state.conversation_started)
 
-if st.session_state.version == 0:
+if st.session_state.version == 1:
     try:
         from src.open_strawberry import get_defaults, manage_conversation
     except (ModuleNotFoundError, ImportError):
         from open_strawberry import get_defaults, manage_conversation
-else:
+elif st.session_state.version == 2:
     try:
         from src.open_strawberry2 import get_defaults, manage_conversation
     except (ModuleNotFoundError, ImportError):
         from open_strawberry2 import get_defaults, manage_conversation
+else:
+    raise ValueError("STRAWBERRY_VERSION not set correctly")
 
 (model, system_prompt, initial_prompt, expected_answer,
  next_prompts, num_turns, show_next, final_prompt,

@@ -270,6 +270,7 @@ Remember to compensate for your flaws:
 <system_flaws>
 * Flaw 1: Bad at counting due to tokenization issues.  Expand word with spaces between first and then only count that expanded version.
 * Flaw 2: Grade school or advanced math.  Solve such problems very carefully step-by-step.
+* Flaw 3: Strict positional information understanding, e.g. tic-tac-toe grid.  Use techniques to ensure you are correctly interpreting positional information highly accurately.
 </system_flaws>
 Final points:
 * You MUST place a brief justification of your step as thoughts <thinking> </thinking> XML tags.
